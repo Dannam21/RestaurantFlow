@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api import orders, tables
+from api import messages, orders, tables
 from config import settings
 
 
@@ -20,6 +20,7 @@ app.add_middleware(
 
 app.include_router(orders.router)
 app.include_router(tables.router)
+app.include_router(messages.router)
 
 
 @app.get("/")

@@ -56,12 +56,20 @@ class Table(Base):
 
 class Message(Base):
     __tablename__ = "messages"
-    __table_args__ = (Index("ix_messages_order_id", "order_id"),)
+    __table_args__ = (
+        Index("ix_messages_order_id", "order_id"),
+        Index("ix_messages_table_id", "table_id"),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     sender: Mapped[str] = mapped_column(String(50), nullable=False)
     sender_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    recipient_role: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    table_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)
+    message_type: Mapped[str] = mapped_column(
+        String(50), default="message", server_default="message", nullable=False
+    )
     order_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("orders.id"), nullable=True
     )

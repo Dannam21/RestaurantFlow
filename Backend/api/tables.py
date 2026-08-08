@@ -40,6 +40,9 @@ async def update_table(
     if table is None:
         raise HTTPException(status_code=404, detail="Table not found")
 
+    previous_status = table.status
+    previous_customers = table.customers
+    previous_order_id = table.order_id
     update_data = update.model_dump(exclude_unset=True)
     if update_data.get("status") is not None:
         table.status = update_data["status"]
@@ -47,6 +50,14 @@ async def update_table(
         table.customers = update_data["customers"]
     if "order_id" in update_data:
         table.order_id = update_data["order_id"]
+
+    changed = (
+        table.status != previous_status
+        or table.customers != previous_customers
+        or table.order_id != previous_order_id
+    )
+    if not changed:
+        return TableResponse.model_validate(table)
 
     await session.commit()
     await session.refresh(table)
@@ -61,4 +72,6 @@ async def update_table(
             "updated_at": table.updated_at.isoformat(),
         },
     )
+    if table.status == "empty" and previous_status != "empty":
+        await portal_service.publish_table_available_notification(table.id)
     return TableResponse.model_validate(table)

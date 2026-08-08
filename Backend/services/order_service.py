@@ -64,11 +64,16 @@ async def update_order_progress(
     if order is None:
         return None
 
+    previous_progress = order.progress
+    previous_status = order.status
     order.progress = progress
     if progress == 100:
         order.status = "ready"
     elif progress > 0 and order.status == "pending":
         order.status = "cooking"
+
+    if order.progress == previous_progress and order.status == previous_status:
+        return order
 
     await session.commit()
     await session.refresh(order)
@@ -82,7 +87,7 @@ async def update_order_progress(
     }
     await portal_service.publish_dish_event("dish.progress_updated", dish_payload)
 
-    if order.progress == 100:
+    if order.status == "ready" and previous_status != "ready":
         ready_payload = {
             "order_id": str(order.id),
             "table_id": order.table_id,
@@ -91,13 +96,8 @@ async def update_order_progress(
             "updated_at": order.updated_at.isoformat(),
         }
         await portal_service.publish_order_event("order.ready", ready_payload)
-        await portal_service.publish_notification(
-            "notification.dish_ready",
-            {
-                "order_id": str(order.id),
-                "table_id": order.table_id,
-                "message": "Order ready for pickup",
-            },
+        await portal_service.publish_dish_ready_notification(
+            str(order.id), order.table_id
         )
     return order
 
@@ -110,11 +110,13 @@ async def update_order_status(
         return None
 
     previous_status = order.status
+    previous_progress = order.progress
     order.status = status
     if status in {"ready", "served", "paid"}:
         order.progress = 100
 
     available_table: Table | None = None
+    table_became_available = False
     if status == "paid":
         statement = select(Table).where(
             Table.id == order.table_id,
@@ -122,26 +124,42 @@ async def update_order_status(
         )
         table = await session.scalar(statement)
         if table is not None:
+            table_became_available = table.status != "empty"
             table.status = "empty"
             table.customers = 0
             table.order_id = None
             available_table = table
 
+    order_changed = (
+        order.status != previous_status or order.progress != previous_progress
+    )
+    if not order_changed and available_table is None:
+        return order
+
     await session.commit()
     await session.refresh(order)
 
-    status_payload = {
-        "order_id": str(order.id),
-        "table_id": order.table_id,
-        "previous_status": previous_status,
-        "status": order.status,
-        "progress": order.progress,
-        "updated_at": order.updated_at.isoformat(),
-    }
-    await portal_service.publish_order_event("order.status_changed", status_payload)
+    if order.status != previous_status:
+        status_payload = {
+            "order_id": str(order.id),
+            "table_id": order.table_id,
+            "previous_status": previous_status,
+            "status": order.status,
+            "progress": order.progress,
+            "updated_at": order.updated_at.isoformat(),
+        }
+        await portal_service.publish_order_event(
+            "order.status_changed", status_payload
+        )
 
-    if status == "served":
-        await portal_service.publish_order_event("order.served", status_payload)
+        if status == "served":
+            await portal_service.publish_order_event("order.served", status_payload)
+
+        if status == "ready":
+            await portal_service.publish_order_event("order.ready", status_payload)
+            await portal_service.publish_dish_ready_notification(
+                str(order.id), order.table_id
+            )
 
     if available_table is not None:
         await portal_service.publish_table_event(
@@ -152,4 +170,8 @@ async def update_order_status(
                 "customers": available_table.customers,
             },
         )
+        if table_became_available:
+            await portal_service.publish_table_available_notification(
+                available_table.id
+            )
     return order

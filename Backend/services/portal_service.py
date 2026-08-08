@@ -106,5 +106,43 @@ async def publish_notification(event_type: str, payload: dict[str, Any]) -> None
     await publish_event(_channel("notifications"), event_type, payload)
 
 
+async def publish_table_chat_event(
+    table_id: int, event_type: str, payload: dict[str, Any]
+) -> None:
+    await publish_event(_channel(f"table:{table_id}:chat"), event_type, payload)
+
+
+async def publish_staff_chat_event(
+    event_type: str, payload: dict[str, Any]
+) -> None:
+    await publish_event(_channel("staff:chat"), event_type, payload)
+
+
+async def publish_chat_event(event_type: str, payload: dict[str, Any]) -> None:
+    await publish_event(_channel("chat"), event_type, payload)
+
+
+async def publish_dish_ready_notification(order_id: str, table_id: int) -> None:
+    await publish_notification(
+        "notification.dish_ready",
+        {
+            "order_id": order_id,
+            "table_id": table_id,
+            "message": "Order ready for pickup",
+        },
+    )
+
+
+async def publish_table_available_notification(table_id: int) -> None:
+    await publish_notification(
+        "notification.table_available",
+        {
+            "table_id": table_id,
+            "status": "empty",
+            "message": f"Mesa {table_id} disponible",
+        },
+    )
+
+
 async def publish_state_event(payload: dict[str, Any]) -> None:
     await publish_event(_channel("state"), "restaurant.state_changed", payload)
