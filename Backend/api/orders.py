@@ -5,6 +5,7 @@ from fastapi import (
     BackgroundTasks,
     Depends,
     HTTPException,
+    Query,
     status as http_status,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,7 +32,10 @@ async def create_order(
     background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_db),
 ) -> OrderResponse:
-    order = await order_service.create_order(session, order_data)
+    try:
+        order = await order_service.create_order(session, order_data)
+    except order_service.OrderConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     if order is None:
         raise HTTPException(status_code=404, detail="Table not found")
     background_tasks.add_task(ai_service.process_new_order, order.id)
@@ -41,9 +45,10 @@ async def create_order(
 @router.get("", response_model=list[OrderResponse])
 async def list_orders(
     status: OrderStatus | None = None,
+    limit: int = Query(default=50, ge=1, le=100),
     session: AsyncSession = Depends(get_db),
 ) -> list[OrderResponse]:
-    orders = await order_service.get_orders(session, status)
+    orders = await order_service.get_orders(session, status, limit)
     return [OrderResponse.model_validate(order) for order in orders]
 
 
@@ -64,9 +69,12 @@ async def update_order_progress(
     update: OrderProgressUpdate,
     session: AsyncSession = Depends(get_db),
 ) -> OrderResponse:
-    order = await order_service.update_order_progress(
-        session, order_id, update.progress
-    )
+    try:
+        order = await order_service.update_order_progress(
+            session, order_id, update.progress
+        )
+    except order_service.OrderConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     if order is None:
         raise HTTPException(status_code=404, detail="Order not found")
     return OrderResponse.model_validate(order)
@@ -78,7 +86,12 @@ async def update_order_status(
     update: OrderStatusUpdate,
     session: AsyncSession = Depends(get_db),
 ) -> OrderResponse:
-    order = await order_service.update_order_status(session, order_id, update.status)
+    try:
+        order = await order_service.update_order_status(
+            session, order_id, update.status
+        )
+    except order_service.OrderConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     if order is None:
         raise HTTPException(status_code=404, detail="Order not found")
     return OrderResponse.model_validate(order)

@@ -1,3 +1,4 @@
+import logging
 from uuid import UUID
 
 from sqlalchemy import select
@@ -8,10 +9,28 @@ from schemas.models import OrderCreate, OrderStatus
 from services import portal_service
 
 
+logger = logging.getLogger(__name__)
+
+class OrderConflictError(ValueError):
+    pass
+
+
+ALLOWED_STATUS_TRANSITIONS: dict[str, set[str]] = {
+    "pending": {"analyzing", "cooking"},
+    "analyzing": {"pending", "cooking"},
+    "cooking": {"ready"},
+    "ready": {"served"},
+    "served": {"paid"},
+    "paid": set(),
+}
+
+
 async def create_order(session: AsyncSession, order_data: OrderCreate) -> Order | None:
     table = await session.get(Table, order_data.table_id)
     if table is None:
         return None
+    if table.order_id is not None:
+        raise OrderConflictError("Table already has an active order")
 
     order = Order(
         table_id=order_data.table_id,
@@ -40,15 +59,23 @@ async def create_order(session: AsyncSession, order_data: OrderCreate) -> Order 
             "created_at": order.created_at.isoformat(),
         },
     )
+    await portal_service.publish_state_event(
+        {"resource": "order", "resource_id": str(order.id)}
+    )
+    logger.info("Order created order_id=%s table_id=%s", order.id, order.table_id)
     return order
 
 
-async def get_orders(session: AsyncSession, status: OrderStatus | None = None) -> list[Order]:
+async def get_orders(
+    session: AsyncSession,
+    status: OrderStatus | None = None,
+    limit: int = 50,
+) -> list[Order]:
     statement = select(Order)
     if status is not None:
         statement = statement.where(Order.status == status)
 
-    statement = statement.order_by(Order.created_at.desc())
+    statement = statement.order_by(Order.created_at.desc()).limit(limit)
     result = await session.scalars(statement)
     return list(result.all())
 
@@ -64,8 +91,17 @@ async def update_order_progress(
     if order is None:
         return None
 
+    if order.status in {"served", "paid"}:
+        raise OrderConflictError(
+            f"Progress cannot be changed when order status is {order.status}"
+        )
+
     previous_progress = order.progress
     previous_status = order.status
+    if progress < previous_progress:
+        raise OrderConflictError("Order progress cannot move backwards")
+    if order.status == "ready" and progress != 100:
+        raise OrderConflictError("A ready order must keep progress at 100")
     order.progress = progress
     if progress == 100:
         order.status = "ready"
@@ -86,6 +122,9 @@ async def update_order_progress(
         "updated_at": order.updated_at.isoformat(),
     }
     await portal_service.publish_dish_event("dish.progress_updated", dish_payload)
+    await portal_service.publish_state_event(
+        {"resource": "order", "resource_id": str(order.id)}
+    )
 
     if order.status == "ready" and previous_status != "ready":
         ready_payload = {
@@ -111,6 +150,12 @@ async def update_order_status(
 
     previous_status = order.status
     previous_progress = order.progress
+    if status != previous_status and status not in ALLOWED_STATUS_TRANSITIONS.get(
+        previous_status, set()
+    ):
+        raise OrderConflictError(
+            f"Invalid order status transition: {previous_status} -> {status}"
+        )
     order.status = status
     if status in {"ready", "served", "paid"}:
         order.progress = 100
@@ -174,4 +219,10 @@ async def update_order_status(
             await portal_service.publish_table_available_notification(
                 available_table.id
             )
+    await portal_service.publish_state_event(
+        {"resource": "order", "resource_id": str(order.id)}
+    )
+    logger.info(
+        "Order status updated order_id=%s status=%s", order.id, order.status
+    )
     return order

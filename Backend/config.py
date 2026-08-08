@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
     frontend_url: str = "http://localhost:3000"
+    frontend_urls: str | None = None
     database_url: str = (
         "postgresql+asyncpg://postgres:password@localhost:5432/restaurant_flow"
     )
@@ -33,9 +34,17 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_portal_configuration(self) -> "Settings":
-        if self.portal_enabled and not self.portal_secret_key:
+        is_production = self.app_env.lower() == "production"
+        if is_production and self.portal_enabled and not self.portal_secret_key:
             raise ValueError("PORTAL_SECRET_KEY is required when PORTAL_ENABLED=true")
+        if is_production and self.ai_enabled and not self.anthropic_api_key:
+            raise ValueError("ANTHROPIC_API_KEY is required when AI_ENABLED=true")
         return self
+
+    @property
+    def cors_origins(self) -> list[str]:
+        configured = self.frontend_urls or self.frontend_url
+        return [origin.strip() for origin in configured.split(",") if origin.strip()]
 
 
 settings = Settings()

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -125,3 +125,35 @@ class OperationalAlert(BaseModel):
     severity: AlertSeverity
     message: str = Field(min_length=1, max_length=500)
     detected_at: datetime
+
+
+class StatsResponse(BaseModel):
+    total_orders: int
+    active_orders: int
+    completed_orders: int
+    average_order_time_minutes: float
+    average_estimated_time_minutes: float
+    tables_total: int
+    tables_occupied: int
+    tables_available: int
+    messages_today: int
+    alerts_today: int
+    revenue_today: float | None = None
+    satisfaction: float | None = None
+
+
+class AgentActivityResponse(BaseModel):
+    id: UUID
+    agent_name: str
+    action: str
+    output_data: dict[str, Any] | list[Any] | None
+    created_at: datetime
+
+
+class DashboardResponse(BaseModel):
+    stats: StatsResponse
+    orders: list[OrderResponse]
+    tables: list[TableResponse]
+    alerts: list[AgentActivityResponse]
+    agent_activity: list[AgentActivityResponse]
+    recent_requests: list[MessageResponse]
