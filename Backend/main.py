@@ -1,13 +1,27 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api import messages, orders, tables
+from api import messages, monitoring, orders, tables
 from config import settings
+from services.monitoring_service import start_monitoring, stop_monitoring
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    await start_monitoring()
+    try:
+        yield
+    finally:
+        await stop_monitoring()
 
 
 app = FastAPI(
     title=settings.app_name,
     description="Real-time restaurant management API for RestaurantFlow.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -21,6 +35,7 @@ app.add_middleware(
 app.include_router(orders.router)
 app.include_router(tables.router)
 app.include_router(messages.router)
+app.include_router(monitoring.router)
 
 
 @app.get("/")

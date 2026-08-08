@@ -1,4 +1,4 @@
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     ai_model: str = "claude-haiku-4-5-20251001"
     ai_timeout_seconds: float = 15.0
+    monitoring_enabled: bool = True
+    predictor_interval_seconds: int = Field(default=30, ge=1)
+    supervisor_interval_seconds: int = Field(default=60, ge=1)
+    ready_warning_minutes: int = Field(default=5, ge=1)
+    delay_warning_minutes: int = Field(default=5, ge=1)
+    alert_dedup_minutes: int = Field(default=10, ge=1)
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

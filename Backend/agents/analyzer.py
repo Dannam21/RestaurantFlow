@@ -86,6 +86,7 @@ async def analyze_order(session: AsyncSession, order: Order) -> AnalyzerResult:
         )
 
     await session.refresh(order)
+    order.estimated_duration = result.estimated_time
     order.estimated_time = result.estimated_time
     restored_status = changed_to_analyzing and order.status == "analyzing"
     if restored_status:

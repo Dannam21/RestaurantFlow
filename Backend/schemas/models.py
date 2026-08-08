@@ -12,6 +12,7 @@ MessageRecipient = Literal["client", "waiter", "chef", "admin"]
 MessageType = Literal["message", "customer_request", "kitchen_note", "system"]
 Complexity = Literal["low", "medium", "high"]
 Priority = Literal["low", "normal", "high", "critical"]
+AlertSeverity = Literal["info", "warning", "critical"]
 
 
 class OrderItem(BaseModel):
@@ -113,3 +114,14 @@ class PriorityItem(BaseModel):
 
 class PrioritizerResult(BaseModel):
     priorities: list[PriorityItem]
+
+
+class OperationalAlert(BaseModel):
+    alert_type: Literal[
+        "order.delayed", "dish.waiting_pickup", "order.waiting_to_start"
+    ]
+    order_id: UUID
+    table_id: int
+    severity: AlertSeverity
+    message: str = Field(min_length=1, max_length=500)
+    detected_at: datetime
