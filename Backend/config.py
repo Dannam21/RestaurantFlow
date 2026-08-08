@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     portal_api_url: str = "https://api.useportal.co"
     portal_sender_id: str = "restaurantflow-backend"
     restaurant_id: int = 1
+    ai_enabled: bool = False
+    anthropic_api_key: str | None = None
+    ai_model: str = "claude-haiku-4-5-20251001"
+    ai_timeout_seconds: float = 15.0
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

@@ -146,3 +146,7 @@ async def publish_table_available_notification(table_id: int) -> None:
 
 async def publish_state_event(payload: dict[str, Any]) -> None:
     await publish_event(_channel("state"), "restaurant.state_changed", payload)
+
+
+async def publish_agent_event(event_type: str, payload: dict[str, Any]) -> None:
+    await publish_event(_channel("agents"), event_type, payload)

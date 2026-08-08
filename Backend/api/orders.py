@@ -1,6 +1,12 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status as http_status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    status as http_status,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import get_db
@@ -11,7 +17,7 @@ from schemas.models import (
     OrderStatus,
     OrderStatusUpdate,
 )
-from services import order_service
+from services import ai_service, order_service
 
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
@@ -22,11 +28,13 @@ router = APIRouter(prefix="/api/orders", tags=["orders"])
 )
 async def create_order(
     order_data: OrderCreate,
+    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_db),
 ) -> OrderResponse:
     order = await order_service.create_order(session, order_data)
     if order is None:
         raise HTTPException(status_code=404, detail="Table not found")
+    background_tasks.add_task(ai_service.process_new_order, order.id)
     return OrderResponse.model_validate(order)
 
 

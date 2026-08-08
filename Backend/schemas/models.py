@@ -10,6 +10,8 @@ TableStatus = Literal["empty", "waiting_order", "cooking", "eating", "paying"]
 MessageSender = Literal["client", "waiter", "chef", "admin", "system"]
 MessageRecipient = Literal["client", "waiter", "chef", "admin"]
 MessageType = Literal["message", "customer_request", "kitchen_note", "system"]
+Complexity = Literal["low", "medium", "high"]
+Priority = Literal["low", "normal", "high", "critical"]
 
 
 class OrderItem(BaseModel):
@@ -93,3 +95,21 @@ class MessageResponse(BaseModel):
     text: str
     message_type: str
     created_at: datetime
+
+
+class AnalyzerResult(BaseModel):
+    complexity: Complexity
+    estimated_time: int = Field(ge=1, le=240)
+    warnings: list[str] = Field(default_factory=list, max_length=20)
+    reasoning_summary: str = Field(min_length=1, max_length=500)
+
+
+class PriorityItem(BaseModel):
+    order_id: UUID
+    priority: Priority
+    score: int = Field(ge=0, le=100)
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class PrioritizerResult(BaseModel):
+    priorities: list[PriorityItem]
