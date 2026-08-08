@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api import orders, tables
 from config import settings
 
 
@@ -17,6 +18,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(orders.router)
+app.include_router(tables.router)
+
 
 @app.get("/")
 async def root() -> dict[str, str]:
@@ -27,7 +31,7 @@ async def root() -> dict[str, str]:
     }
 
 
-@app.get("/health")
+@app.get("/health", tags=["health"])
 async def health() -> dict[str, str]:
     return {
         "status": "ok",
