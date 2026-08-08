@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Order, Table
 from schemas.models import OrderCreate, OrderStatus
+from services import portal_service
 
 
 async def create_order(session: AsyncSession, order_data: OrderCreate) -> Order | None:
@@ -27,6 +28,18 @@ async def create_order(session: AsyncSession, order_data: OrderCreate) -> Order 
 
     await session.commit()
     await session.refresh(order)
+
+    await portal_service.publish_order_event(
+        "order.created",
+        {
+            "order_id": str(order.id),
+            "table_id": order.table_id,
+            "status": order.status,
+            "progress": order.progress,
+            "items": order.items,
+            "created_at": order.created_at.isoformat(),
+        },
+    )
     return order
 
 
@@ -59,6 +72,33 @@ async def update_order_progress(
 
     await session.commit()
     await session.refresh(order)
+
+    dish_payload = {
+        "order_id": str(order.id),
+        "table_id": order.table_id,
+        "progress": order.progress,
+        "status": order.status,
+        "updated_at": order.updated_at.isoformat(),
+    }
+    await portal_service.publish_dish_event("dish.progress_updated", dish_payload)
+
+    if order.progress == 100:
+        ready_payload = {
+            "order_id": str(order.id),
+            "table_id": order.table_id,
+            "status": order.status,
+            "progress": order.progress,
+            "updated_at": order.updated_at.isoformat(),
+        }
+        await portal_service.publish_order_event("order.ready", ready_payload)
+        await portal_service.publish_notification(
+            "notification.dish_ready",
+            {
+                "order_id": str(order.id),
+                "table_id": order.table_id,
+                "message": "Order ready for pickup",
+            },
+        )
     return order
 
 
@@ -69,10 +109,12 @@ async def update_order_status(
     if order is None:
         return None
 
+    previous_status = order.status
     order.status = status
     if status in {"ready", "served", "paid"}:
         order.progress = 100
 
+    available_table: Table | None = None
     if status == "paid":
         statement = select(Table).where(
             Table.id == order.table_id,
@@ -83,7 +125,31 @@ async def update_order_status(
             table.status = "empty"
             table.customers = 0
             table.order_id = None
+            available_table = table
 
     await session.commit()
     await session.refresh(order)
+
+    status_payload = {
+        "order_id": str(order.id),
+        "table_id": order.table_id,
+        "previous_status": previous_status,
+        "status": order.status,
+        "progress": order.progress,
+        "updated_at": order.updated_at.isoformat(),
+    }
+    await portal_service.publish_order_event("order.status_changed", status_payload)
+
+    if status == "served":
+        await portal_service.publish_order_event("order.served", status_payload)
+
+    if available_table is not None:
+        await portal_service.publish_table_event(
+            "table.available",
+            {
+                "table_id": available_table.id,
+                "status": available_table.status,
+                "customers": available_table.customers,
+            },
+        )
     return order

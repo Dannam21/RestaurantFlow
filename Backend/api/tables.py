@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db.database import get_db
 from db.models import Table
 from schemas.models import TableResponse, TableUpdate
+from services import portal_service
 
 
 router = APIRouter(prefix="/api/tables", tags=["tables"])
@@ -49,4 +50,15 @@ async def update_table(
 
     await session.commit()
     await session.refresh(table)
+
+    await portal_service.publish_table_event(
+        "table.updated",
+        {
+            "table_id": table.id,
+            "status": table.status,
+            "customers": table.customers,
+            "order_id": str(table.order_id) if table.order_id else None,
+            "updated_at": table.updated_at.isoformat(),
+        },
+    )
     return TableResponse.model_validate(table)
