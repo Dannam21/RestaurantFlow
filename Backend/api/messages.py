@@ -1,14 +1,37 @@
+import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.database import get_db
+from db.database import AsyncSessionLocal, get_db
+from db.models import Message
 from schemas.models import MessageCreate, MessageResponse, MessageSender
-from services import message_service
+from services import ai_service, message_service
 
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/messages", tags=["messages"])
+
+
+async def _create_bot_reply(client_text: str, table_id: int | None) -> None:
+    reply_text = await ai_service.get_bot_response(
+        client_text, order_context={"table_id": table_id}
+    )
+
+    async with AsyncSessionLocal() as session:
+        session.add(
+            Message(
+                sender="bot",
+                recipient_role="client",
+                table_id=table_id,
+                text=reply_text,
+                message_type="message",
+            )
+        )
+        await session.commit()
+        logger.info("Bot reply saved table_id=%s", table_id)
 
 
 @router.post(
@@ -16,9 +39,14 @@ router = APIRouter(prefix="/api/messages", tags=["messages"])
 )
 async def create_message(
     message_data: MessageCreate,
+    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_db),
 ) -> MessageResponse:
     message = await message_service.create_message(session, message_data)
+
+    if message.sender == "client" and message.message_type == "message":
+        background_tasks.add_task(_create_bot_reply, message.text, message.table_id)
+
     return MessageResponse.model_validate(message)
 
 

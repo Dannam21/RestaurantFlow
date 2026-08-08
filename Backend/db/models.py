@@ -79,6 +79,44 @@ class Message(Base):
     )
 
 
+class Customer(Base):
+    __tablename__ = "customers"
+    __table_args__ = (Index("ix_customers_email", "email", unique=True),)
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    full_name: Mapped[str] = mapped_column(String(150), nullable=False)
+    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(256), nullable=False)
+    is_verified: Mapped[bool] = mapped_column(default=False, nullable=False)
+    verification_code: Mapped[str | None] = mapped_column(String(6), nullable=True)
+    verification_code_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+
+class StaffUser(Base):
+    __tablename__ = "staff_users"
+    __table_args__ = (Index("ix_staff_users_email", "email", unique=True),)
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(256), nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False)
+    name: Mapped[str] = mapped_column(String(150), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+
+
 class AgentLog(Base):
     __tablename__ = "agent_logs"
     __table_args__ = (Index("ix_agent_logs_agent_name", "agent_name"),)

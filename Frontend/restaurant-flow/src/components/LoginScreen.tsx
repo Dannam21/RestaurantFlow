@@ -1,25 +1,55 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { ApiError, loginCustomer } from "@/src/lib/api";
+import type { AppRole, AuthUser } from "@/src/types";
 
 interface LoginScreenProps {
-  onLogin: () => void;
+  onLogin: (role: AppRole, user?: AuthUser) => void;
   onClose: () => void;
+  onSwitchToRegister?: () => void;
 }
 
-export default function LoginScreen({ onLogin, onClose }: LoginScreenProps) {
+export default function LoginScreen({
+  onLogin,
+  onClose,
+  onSwitchToRegister,
+}: LoginScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<AppRole>("cliente");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSubmitting) return;
+    setError(null);
+
+    if (role !== "cliente") {
+      setIsSubmitting(true);
+      window.setTimeout(() => {
+        onLogin(role);
+      }, 700);
+      return;
+    }
 
     setIsSubmitting(true);
-    window.setTimeout(() => {
-      onLogin();
-    }, 700);
+    try {
+      const customer = await loginCustomer({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      onLogin(role, { name: customer.full_name, email: customer.email });
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo iniciar sesión. Intenta de nuevo."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -54,6 +84,22 @@ export default function LoginScreen({ onLogin, onClose }: LoginScreenProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="role" className="text-xs font-medium text-slate-300">
+              Vista inicial
+            </label>
+            <select
+              id="role"
+              value={role}
+              onChange={(event) => setRole(event.target.value as AppRole)}
+              className="rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-white outline-none transition-colors focus:border-blue-500"
+            >
+              <option value="cliente">Cliente</option>
+              <option value="mesero">Mesero</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="email"
@@ -92,6 +138,12 @@ export default function LoginScreen({ onLogin, onClose }: LoginScreenProps) {
             />
           </div>
 
+          {error && (
+            <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+              {error}
+            </p>
+          )}
+
           <button
             type="submit"
             disabled={isSubmitting}
@@ -100,6 +152,19 @@ export default function LoginScreen({ onLogin, onClose }: LoginScreenProps) {
             {isSubmitting ? "Iniciando sesión..." : "Iniciar sesión"}
           </button>
         </form>
+
+        {onSwitchToRegister && (
+          <div className="mt-5 flex items-center justify-center gap-1.5 text-xs text-slate-400">
+            <span>¿No tienes cuenta?</span>
+            <button
+              type="button"
+              onClick={onSwitchToRegister}
+              className="font-semibold text-blue-400 transition-colors hover:text-blue-300"
+            >
+              Regístrate
+            </button>
+          </div>
+        )}
 
         <div className="mt-5 flex items-center justify-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />

@@ -3,6 +3,7 @@ import logging
 from typing import TypeVar
 from uuid import UUID
 
+import requests
 from anthropic import AsyncAnthropic
 from pydantic import BaseModel
 
@@ -12,6 +13,15 @@ from services import portal_service
 
 logger = logging.getLogger(__name__)
 ResponseModel = TypeVar("ResponseModel", bound=BaseModel)
+
+OLLAMA_GENERATE_URL = "http://localhost:11434/api/generate"
+OLLAMA_MODEL = "gemma4:e2b"
+OLLAMA_TIMEOUT_SECONDS = 30
+BOT_SYSTEM_PROMPT = (
+    "Eres un bot amable de restaurante que ayuda a clientes en español. "
+    "Responde de manera breve y amigable."
+)
+BOT_FALLBACK_RESPONSE = "Disculpa, el sistema está ocupado. Intenta de nuevo en un momento."
 
 
 class AIUnavailableError(RuntimeError):
@@ -53,6 +63,43 @@ async def generate_structured_response(
     except Exception as exc:
         logger.exception("AI request failed model=%s", settings.ai_model)
         raise AIUnavailableError("AI request failed") from exc
+
+
+def _build_bot_prompt(message: str, order_context: dict | None) -> str:
+    prompt_lines = [BOT_SYSTEM_PROMPT]
+    if order_context:
+        details = ", ".join(
+            f"{key}: {value}"
+            for key, value in order_context.items()
+            if value is not None
+        )
+        if details:
+            prompt_lines.append(f"Contexto: {details}")
+    prompt_lines.append(f"Cliente dice: {message}")
+    prompt_lines.append("Bot:")
+    return "\n".join(prompt_lines)
+
+
+def _call_ollama_sync(prompt: str) -> str:
+    response = requests.post(
+        OLLAMA_GENERATE_URL,
+        json={"model": OLLAMA_MODEL, "prompt": prompt, "stream": False},
+        timeout=OLLAMA_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    reply = str(response.json().get("response", "")).strip()
+    if not reply:
+        raise ValueError("Ollama returned an empty response")
+    return reply
+
+
+async def get_bot_response(message: str, order_context: dict | None = None) -> str:
+    prompt = _build_bot_prompt(message, order_context)
+    try:
+        return await asyncio.to_thread(_call_ollama_sync, prompt)
+    except Exception:
+        logger.exception("Ollama request failed model=%s", OLLAMA_MODEL)
+        return BOT_FALLBACK_RESPONSE
 
 
 async def process_new_order(order_id: UUID) -> None:

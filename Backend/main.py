@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
-from api import dashboard, messages, monitoring, orders, stats, tables
+from api import customers, dashboard, messages, monitoring, orders, staff, stats, tables
 from config import settings
 from db.database import AsyncSessionLocal, engine
 from services.monitoring_service import start_monitoring, stop_monitoring
@@ -47,6 +47,8 @@ app.add_middleware(
 app.include_router(orders.router)
 app.include_router(tables.router)
 app.include_router(messages.router)
+app.include_router(customers.router)
+app.include_router(staff.router)
 app.include_router(monitoring.router)
 app.include_router(stats.router)
 app.include_router(dashboard.router)

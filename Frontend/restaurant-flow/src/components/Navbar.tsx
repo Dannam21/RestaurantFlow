@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { AppRole, AuthUser } from "@/src/types";
 
 function capitalize(text: string) {
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -54,24 +55,61 @@ function ChatIcon() {
   );
 }
 
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+      <path
+        d="M15 17.25V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1.75"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 12h11m0 0-3-3m3 3-3 3"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 interface NavbarProps {
   isAuthenticated: boolean;
+  activeRole: AppRole;
+  currentUser?: AuthUser | null;
   onLoginClick?: () => void;
   onLogout?: () => void;
 }
 
 export default function Navbar({
   isAuthenticated,
+  activeRole,
+  currentUser,
   onLoginClick,
   onLogout,
 }: NavbarProps) {
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    setNow(new Date());
-    const id = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(id);
+    const updateNow = () => setNow(new Date());
+    const timeoutId = window.setTimeout(updateNow, 0);
+    const intervalId = window.setInterval(updateNow, 1000 * 30);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+    };
   }, []);
+
+  const roleLabel =
+    activeRole === "cliente"
+      ? "Cliente"
+      : activeRole === "mesero"
+        ? "Mesero"
+        : "Admin";
 
   return (
     <header className="flex h-14 w-full shrink-0 items-center justify-between border-b border-slate-800 bg-[#0b1120] px-4">
@@ -124,27 +162,34 @@ export default function Navbar({
           <ChatIcon />
         </button>
 
-        <span className="mx-2 h-5 w-px bg-slate-700" />
+          <span className="mx-2 h-5 w-px bg-slate-700" />
 
         {isAuthenticated ? (
-          <button
-            type="button"
-            onClick={onLogout}
-            title="Cerrar sesión"
-            className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-slate-800"
-          >
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-xs font-bold text-white">
-              D
-            </span>
-            <span className="hidden text-left leading-tight sm:block">
-              <span className="block text-xs font-semibold text-white">
-                Darlene
+          <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-xs font-bold text-white">
+                {(currentUser?.name ?? roleLabel).charAt(0).toUpperCase()}
               </span>
-              <span className="block text-[10px] text-slate-400">
-                Tu turno: 1°
+              <span className="hidden text-left leading-tight sm:block">
+                <span className="block text-xs font-semibold text-white">
+                  {currentUser?.name ?? roleLabel}
+                </span>
+                <span className="block text-[10px] text-slate-400">
+                  Vista: {roleLabel}
+                </span>
               </span>
-            </span>
-          </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={onLogout}
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+            >
+              <LogoutIcon />
+            </button>
+          </div>
         ) : (
           <button
             type="button"

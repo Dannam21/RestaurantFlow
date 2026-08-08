@@ -56,6 +56,9 @@ El archivo `.env.example` enumera todas las variables. Las principales son:
 - `APP_NAME`, `APP_ENV`, `DEBUG`, `HOST` y `PORT`.
 - `FRONTEND_URL` o `FRONTEND_URLS` (lista separada por comas).
 - `DATABASE_URL` y `DATABASE_ECHO`.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`,
+  `SMTP_USE_TLS`, `SMTP_USE_SSL`, `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`
+  y `CUSTOMER_VERIFICATION_CODE_TTL_MINUTES`.
 - `PORTAL_ENABLED`, `PORTAL_SECRET_KEY`, `PORTAL_API_URL`,
   `PORTAL_SENDER_ID` y `RESTAURANT_ID`.
 - `AI_ENABLED`, `ANTHROPIC_API_KEY`, `AI_MODEL` y `AI_TIMEOUT_SECONDS`.
@@ -75,6 +78,12 @@ o IA sin su credencial requerida produce un error claro de configuración.
 - `GET /health/ready`: comprueba PostgreSQL e informa la configuración conocida
   de Portal, IA y monitoring sin hacer llamadas externas costosas.
 - `GET /api/monitoring/status`
+
+### Clientes
+
+- `POST /api/customers/register`: registra un cliente y envía un código al correo.
+- `POST /api/customers/verify`: confirma el código y marca el correo como verificado.
+- `POST /api/customers/login`: valida email y contraseña para un cliente verificado.
 
 ### Órdenes y mesas
 

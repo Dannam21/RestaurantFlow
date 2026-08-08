@@ -2,92 +2,24 @@
 
 import { useEffect, useRef, useState } from "react";
 import Message from "@/src/components/Message";
-import type { ChatMessageType } from "@/src/types";
-
-function nowLabel() {
-  return new Date().toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-const INITIAL_MESSAGES: ChatMessageType[] = [
-  {
-    id: "1",
-    sender: "bot",
-    text: "¡Bienvenido! 👋\n\nPuedes escribir aquí si tienes alguna consulta sobre tu orden, el menú o cualquier otra cosa.",
-    time: "12:30 PM",
-  },
-  {
-    id: "2",
-    sender: "user",
-    text: "Hola, ¿cuánto tiempo falta para mi orden?",
-    time: "12:31 PM",
-    status: "read",
-  },
-  {
-    id: "3",
-    sender: "bot",
-    text: "Tu orden está en preparación.\nTiempo estimado: ~4 minutos 👨‍🍳",
-    time: "12:31 PM",
-  },
-  {
-    id: "4",
-    sender: "user",
-    text: "Perfecto, gracias!",
-    time: "12:31 PM",
-    status: "read",
-  },
-  {
-    id: "5",
-    sender: "bot",
-    text: "¡De nada! Te avisaremos cuando esté lista. 🎉",
-    time: "12:32 PM",
-  },
-];
-
-const BOT_REPLIES: { keywords: string[]; reply: string }[] = [
-  {
-    keywords: ["mesa", "espera", "cuanto falta", "tiempo"],
-    reply: "Tu mesa se está preparando. El tiempo estimado de espera es de ~12 minutos. Te avisaremos apenas esté lista 🔔",
-  },
-  {
-    keywords: ["menu", "carta", "plato", "comida"],
-    reply: "Puedes ver nuestro menú completo en el mostrador de la entrada. ¿Buscas alguna recomendación en especial? 🍽️",
-  },
-  {
-    keywords: ["gracias"],
-    reply: "¡Con mucho gusto! Estamos para ayudarte 😊",
-  },
-  {
-    keywords: ["orden", "pedido"],
-    reply: "Tu orden está en camino a la cocina. Te mantendré al tanto de cualquier actualización 👨‍🍳",
-  },
-];
-
-const DEFAULT_REPLY =
-  "¡Gracias por tu mensaje! Un miembro de nuestro equipo lo revisará en breve. Mientras tanto, ¿hay algo más en lo que pueda ayudarte?";
-
-function pickReply(userText: string) {
-  const normalized = userText.toLowerCase();
-  const match = BOT_REPLIES.find((entry) =>
-    entry.keywords.some((keyword) => normalized.includes(keyword))
-  );
-  return match?.reply ?? DEFAULT_REPLY;
-}
+import { useChat } from "@/src/hooks/useChat";
 
 interface ChatPanelProps {
   isAuthenticated: boolean;
   onRequireAuth: () => void;
+  tableId?: number;
 }
 
 export default function ChatPanel({
   isAuthenticated,
   onRequireAuth,
+  tableId,
 }: ChatPanelProps) {
-  const [messages, setMessages] = useState<ChatMessageType[]>(INITIAL_MESSAGES);
+  const { messages, isLoading, isSending, error, sendMessage } = useChat({
+    tableId,
+    enabled: isAuthenticated,
+  });
   const [draft, setDraft] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -95,41 +27,23 @@ export default function ChatPanel({
       top: scrollRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [messages, isTyping]);
+  }, [messages, isSending]);
 
-  function handleSend() {
+  async function handleSend() {
     const text = draft.trim();
-    if (!text) return;
+    if (!text || isSending) return;
 
     if (!isAuthenticated) {
       onRequireAuth();
       return;
     }
 
-    const userMessage: ChatMessageType = {
-      id: crypto.randomUUID(),
-      sender: "user",
-      text,
-      time: nowLabel(),
-      status: "sent",
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
     setDraft("");
-    setIsTyping(true);
-
-    window.setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          sender: "bot",
-          text: pickReply(text),
-          time: nowLabel(),
-        },
-      ]);
-      setIsTyping(false);
-    }, 1100 + Math.random() * 600);
+    try {
+      await sendMessage(text);
+    } catch {
+      setDraft(text);
+    }
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -160,23 +74,26 @@ export default function ChatPanel({
         ref={scrollRef}
         className="flex-1 space-y-4 overflow-y-auto px-4 py-4"
       >
+        {isLoading && (
+          <p className="pl-1 text-xs text-slate-500">Cargando mensajes...</p>
+        )}
+
+        {!isLoading && messages.length === 0 && (
+          <p className="pl-1 text-xs text-slate-500">
+            Aún no hay mensajes. Escribe para iniciar la conversación.
+          </p>
+        )}
+
         {messages.map((message) => (
           <Message key={message.id} message={message} />
         ))}
-
-        {isTyping && (
-          <div className="flex animate-fade-in-up items-center gap-2 pl-1">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/20 text-sm">
-              👨‍🍳
-            </span>
-            <div className="flex items-center gap-1 rounded-2xl rounded-tl-sm bg-slate-700/70 px-4 py-3">
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
-            </div>
-          </div>
-        )}
       </div>
+
+      {error && (
+        <div className="border-t border-rose-900/40 bg-rose-950/40 px-4 py-2">
+          <p className="text-xs text-rose-300">{error}</p>
+        </div>
+      )}
 
       <div className="border-t border-slate-700/60 px-4 py-3">
         <div className="flex items-center gap-2">
@@ -191,7 +108,7 @@ export default function ChatPanel({
           <button
             type="button"
             onClick={handleSend}
-            disabled={!draft.trim()}
+            disabled={!draft.trim() || isSending}
             aria-label="Enviar mensaje"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition-all hover:bg-blue-500 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
           >

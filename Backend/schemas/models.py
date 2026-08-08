@@ -1,8 +1,12 @@
 from datetime import datetime
+import re
 from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 OrderStatus = Literal["pending", "analyzing", "cooking", "ready", "served", "paid"]
@@ -10,6 +14,7 @@ TableStatus = Literal["empty", "waiting_order", "cooking", "eating", "paying"]
 MessageSender = Literal["client", "waiter", "chef", "admin", "system"]
 MessageRecipient = Literal["client", "waiter", "chef", "admin"]
 MessageType = Literal["message", "customer_request", "kitchen_note", "system"]
+StaffRole = Literal["admin", "waiter", "chef"]
 Complexity = Literal["low", "medium", "high"]
 Priority = Literal["low", "normal", "high", "critical"]
 AlertSeverity = Literal["info", "warning", "critical"]
@@ -96,6 +101,125 @@ class MessageResponse(BaseModel):
     text: str
     message_type: str
     created_at: datetime
+
+
+class CustomerRegisterRequest(BaseModel):
+    full_name: str = Field(min_length=1, max_length=150)
+    email: str = Field(min_length=5, max_length=320)
+    password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("full_name")
+    @classmethod
+    def validate_full_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Full name cannot be empty")
+        return value
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not EMAIL_PATTERN.match(normalized):
+            raise ValueError("Invalid email format")
+        return normalized
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        normalized = value.strip()
+        if len(normalized) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        return normalized
+
+
+class CustomerVerifyRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=320)
+    code: str = Field(min_length=6, max_length=6)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not EMAIL_PATTERN.match(normalized):
+            raise ValueError("Invalid email format")
+        return normalized
+
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized.isdigit():
+            raise ValueError("Verification code must contain only digits")
+        return normalized
+
+
+class CustomerLoginRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=320)
+    password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not EMAIL_PATTERN.match(normalized):
+            raise ValueError("Invalid email format")
+        return normalized
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        normalized = value.strip()
+        if len(normalized) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        return normalized
+
+
+class CustomerResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    full_name: str
+    email: str
+    is_verified: bool
+    verified_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class CustomerRegisterResponse(BaseModel):
+    message: str
+    customer_id: UUID
+    email: str
+    expires_in_minutes: int
+
+
+class StaffLoginRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=320)
+    password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not EMAIL_PATTERN.match(normalized):
+            raise ValueError("Invalid email format")
+        return normalized
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        normalized = value.strip()
+        if len(normalized) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        return normalized
+
+
+class StaffLoginResponse(BaseModel):
+    staff_id: UUID
+    name: str
+    role: StaffRole
+    email: str
 
 
 class AnalyzerResult(BaseModel):
