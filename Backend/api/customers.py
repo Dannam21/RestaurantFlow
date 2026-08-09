@@ -1,14 +1,19 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
 from db.database import get_db
+from db.models import Customer, ReservationTracking
 from schemas.models import (
     CustomerLoginRequest,
     CustomerRegisterRequest,
     CustomerRegisterResponse,
     CustomerResponse,
     CustomerVerifyRequest,
+    ReservationTrackingResponse,
 )
 from services import customer_service
 from services.email_service import EmailDeliveryError
@@ -67,3 +72,23 @@ async def login_customer(
         raise HTTPException(status_code=401, detail=str(exc)) from exc
 
     return CustomerResponse.model_validate(customer)
+
+
+@router.get(
+    "/{customer_id}/reservations",
+    response_model=list[ReservationTrackingResponse],
+)
+async def list_customer_reservations(
+    customer_id: UUID,
+    session: AsyncSession = Depends(get_db),
+) -> list[ReservationTrackingResponse]:
+    customer = await session.get(Customer, customer_id)
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    result = await session.scalars(
+        select(ReservationTracking)
+        .where(ReservationTracking.customer_id == customer_id)
+        .order_by(ReservationTracking.reserved_at.desc())
+    )
+    return [ReservationTrackingResponse.model_validate(item) for item in result.all()]

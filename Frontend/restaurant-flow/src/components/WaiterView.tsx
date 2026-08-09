@@ -1,37 +1,113 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import WaiterMap from "@/src/components/WaiterMap";
+import WaiterOrderModal from "@/src/components/WaiterOrderModal";
 import WaiterPanel from "@/src/components/WaiterPanel";
 import WaiterSummaryBar from "@/src/components/WaiterSummaryBar";
+import {
+  ApiError,
+  assignServiceSessionWaiter,
+  getServiceSessions,
+  getStaff,
+} from "@/src/lib/api";
 import type { AvailableWaiter } from "@/src/types";
 
-const WAITERS: AvailableWaiter[] = [
-  { id: "w1", name: "Luis", online: true },
-  { id: "w2", name: "Cami", online: true },
-  { id: "w3", name: "Marcos", online: true },
-  { id: "w4", name: "Valeria", online: false },
-];
-
-const INITIAL_ASSIGNMENTS: Record<string, string> = {
-  "7": "w3",
-};
+const CURRENT_WAITER_STORAGE_KEY = "restaurant-flow-current-waiter";
 
 export default function WaiterView() {
-  const [assignments, setAssignments] = useState<Record<string, string>>(
-    INITIAL_ASSIGNMENTS
-  );
+  const [waiters, setWaiters] = useState<AvailableWaiter[]>([]);
+  const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [currentWaiterId, setCurrentWaiterId] = useState<string | null>(null);
+  const [orderingTableId, setOrderingTableId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleAssign(tableId: string, waiterId: string | null) {
-    setAssignments((prev) => {
-      const next = { ...prev };
-      if (waiterId) {
-        next[tableId] = waiterId;
-      } else {
-        delete next[tableId];
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadWaiterState() {
+      try {
+        const [staffUsers, activeSessions] = await Promise.all([
+          getStaff({ role: "waiter" }),
+          getServiceSessions({ active_only: true }),
+        ]);
+        if (cancelled) return;
+
+        const nextWaiters: AvailableWaiter[] = staffUsers.map((user) => ({
+          id: user.id,
+          name: user.name,
+          online: true,
+        }));
+        setWaiters(nextWaiters);
+
+        const nextAssignments = activeSessions.reduce<Record<string, string>>(
+          (acc, session) => {
+            if (session.waiter_id) {
+              acc[String(session.table_id)] = session.waiter_id;
+            }
+            return acc;
+          },
+          {}
+        );
+        setAssignments(nextAssignments);
+
+        const savedWaiterId =
+          typeof window !== "undefined"
+            ? window.localStorage.getItem(CURRENT_WAITER_STORAGE_KEY)
+            : null;
+        const savedWaiterExists = nextWaiters.some(
+          (waiter) => waiter.id === savedWaiterId
+        );
+        const fallbackWaiterId = nextWaiters[0]?.id ?? null;
+        setCurrentWaiterId(savedWaiterExists ? savedWaiterId : fallbackWaiterId);
+        setError(null);
+      } catch (err) {
+        if (cancelled) return;
+        setError(
+          err instanceof ApiError
+            ? err.status === 404
+              ? "El backend no tiene cargadas las rutas de meseros. Reinicia el servidor FastAPI."
+              : err.message
+            : "No se pudo sincronizar la vista del mesero."
+        );
       }
-      return next;
-    });
+    }
+
+    loadWaiterState();
+    const intervalId = window.setInterval(loadWaiterState, 4000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !currentWaiterId) return;
+    window.localStorage.setItem(CURRENT_WAITER_STORAGE_KEY, currentWaiterId);
+  }, [currentWaiterId]);
+
+  async function handleAssign(tableId: string, waiterId: string | null) {
+    try {
+      const updatedSession = await assignServiceSessionWaiter(Number(tableId), waiterId);
+      setAssignments((prev) => {
+        const next = { ...prev };
+        if (updatedSession.waiter_id) {
+          next[tableId] = updatedSession.waiter_id;
+        } else {
+          delete next[tableId];
+        }
+        return next;
+      });
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.status === 404
+            ? "La ruta de asignacion de meseros no esta disponible en el backend actual."
+            : err.message
+          : "No se pudo guardar la asignacion del mesero."
+      );
+    }
   }
 
   return (
@@ -42,14 +118,30 @@ export default function WaiterView() {
         </div>
         <div className="h-full min-h-0 flex-1">
           <WaiterMap
-            waiters={WAITERS}
+            waiters={waiters}
             assignments={assignments}
+            currentWaiterId={currentWaiterId}
+            onTakeOrder={(tableId) => setOrderingTableId(tableId)}
             onAssign={handleAssign}
           />
         </div>
       </div>
 
-      <WaiterSummaryBar waiters={WAITERS} assignments={assignments} />
+      <WaiterSummaryBar
+        waiters={waiters}
+        assignments={assignments}
+        currentWaiterId={currentWaiterId}
+        onCurrentWaiterChange={setCurrentWaiterId}
+        error={error}
+      />
+
+      {orderingTableId !== null ? (
+        <WaiterOrderModal
+          tableId={orderingTableId}
+          onClose={() => setOrderingTableId(null)}
+          onSubmitted={() => setOrderingTableId(null)}
+        />
+      ) : null}
     </div>
   );
 }

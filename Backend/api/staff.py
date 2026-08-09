@@ -1,8 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import get_db
-from schemas.models import StaffLoginRequest, StaffLoginResponse
+from db.models import StaffUser
+from schemas.models import (
+    StaffLoginRequest,
+    StaffLoginResponse,
+    StaffRole,
+    StaffUserResponse,
+)
 from services import staff_service
 
 
@@ -27,3 +34,16 @@ async def login_staff(
         role=staff.role,
         email=staff.email,
     )
+
+
+@router.get("", response_model=list[StaffUserResponse])
+async def list_staff(
+    role: StaffRole | None = Query(default=None),
+    session: AsyncSession = Depends(get_db),
+) -> list[StaffUserResponse]:
+    query = select(StaffUser).order_by(StaffUser.name.asc())
+    if role is not None:
+        query = query.where(StaffUser.role == role)
+
+    result = await session.scalars(query)
+    return [StaffUserResponse.model_validate(user) for user in result.all()]

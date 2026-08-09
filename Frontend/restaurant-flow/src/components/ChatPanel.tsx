@@ -3,21 +3,25 @@
 import { useEffect, useRef, useState } from "react";
 import Message from "@/src/components/Message";
 import { useChat } from "@/src/hooks/useChat";
+import type { AuthUser } from "@/src/types";
 
 interface ChatPanelProps {
   isAuthenticated: boolean;
   onRequireAuth: () => void;
   tableId?: number;
+  currentUser?: AuthUser | null;
 }
 
 export default function ChatPanel({
   isAuthenticated,
   onRequireAuth,
   tableId,
+  currentUser,
 }: ChatPanelProps) {
   const { messages, isLoading, isSending, error, sendMessage } = useChat({
     tableId,
     enabled: isAuthenticated,
+    currentUser: currentUser ?? undefined,
   });
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);

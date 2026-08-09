@@ -1,13 +1,14 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.models import AgentLog, Message, Order, Table
+from db.models import AgentLog, Message, Order, Table, WaitlistEntry
 from schemas.models import (
     AgentActivityResponse,
     DashboardResponse,
     MessageResponse,
     OrderResponse,
     TableResponse,
+    WaitlistEntryResponse,
 )
 from services.stats_service import ACTIVE_ORDER_STATUSES, get_stats
 
@@ -62,11 +63,24 @@ async def get_dashboard(session: AsyncSession) -> DashboardResponse:
             ).all()
         )
     )
+    waitlist = list(
+        (
+            await session.scalars(
+                select(WaitlistEntry)
+                .where(WaitlistEntry.status.in_(("waiting", "notified")))
+                .order_by(WaitlistEntry.created_at.asc())
+                .limit(20)
+            )
+        ).all()
+    )
 
     return DashboardResponse(
         stats=stats,
         orders=[OrderResponse.model_validate(order) for order in orders],
         tables=[TableResponse.model_validate(table) for table in tables],
+        waitlist=[
+            WaitlistEntryResponse.model_validate(entry) for entry in waitlist
+        ],
         alerts=[
             AgentActivityResponse(
                 id=log.id,

@@ -16,10 +16,11 @@ export interface TableProps {
   numPersonas: number;
   sinceMinutes?: number;
   scale?: number;
-  onReserve?: () => void;
   alert?: TableAlert;
   onClick?: () => void;
   assignedWaiterName?: string;
+  isMine?: boolean;
+  hoverHint?: string;
 }
 
 const ALERT_TONE_CLASS: Record<TableAlert["tone"], string> = {
@@ -56,12 +57,12 @@ export default function Table({
   y,
   status,
   numPersonas,
-  sinceMinutes,
   scale = 1,
-  onReserve,
   alert,
   onClick,
   assignedWaiterName,
+  isMine,
+  hoverHint,
 }: TableProps) {
   const isVacant = status === "vacio";
   const tableSprite =
@@ -111,25 +112,10 @@ export default function Table({
             <span>{STATUS_LABEL[status]}</span>
           </div>
 
-          <p className="mt-1 text-slate-300">
-            {numPersonas > 0 ? `${numPersonas} personas` : "Sin comensales"}
-          </p>
-
-          {!isVacant && typeof sinceMinutes === "number" && (
-            <p className="mt-1 text-slate-400">Llegaron hace {sinceMinutes} min</p>
-          )}
-
-          {isVacant && onReserve && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onReserve();
-              }}
-              className="pointer-events-auto mt-2 w-full rounded-lg bg-blue-600 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-500"
-            >
-              Reservar mesa
-            </button>
+          {hoverHint && (
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+              {hoverHint}
+            </p>
           )}
 
           <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-slate-900/95" />
@@ -149,11 +135,22 @@ export default function Table({
         />
       </div>
 
-      {assignedWaiterName && (
-        <div className="pointer-events-none absolute -bottom-1 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full border border-violet-500/50 bg-violet-950/90 px-2 py-0.5 text-[10px] font-medium text-violet-200 shadow-lg">
-          <span>🧑‍🍳</span>
-          <span>{assignedWaiterName}</span>
+      {assignedWaiterName && isMine ? (
+        <div className="pointer-events-none absolute -bottom-2 left-1/2 z-30 flex -translate-x-1/2 flex-col items-center whitespace-nowrap rounded-lg border border-emerald-500/50 bg-emerald-950/90 px-2.5 py-1 text-center shadow-lg">
+          <span className="text-[9px] font-medium leading-tight text-emerald-300/90">
+            Atendiendo:
+          </span>
+          <span className="text-[11px] font-semibold leading-tight text-white">
+            Mesa {id} ({assignedWaiterName})
+          </span>
         </div>
+      ) : (
+        assignedWaiterName && (
+          <div className="pointer-events-none absolute -bottom-1 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full border border-violet-500/50 bg-violet-950/90 px-2 py-0.5 text-[10px] font-medium text-violet-200 shadow-lg">
+            <span>🧑‍🍳</span>
+            <span>{assignedWaiterName}</span>
+          </div>
+        )
       )}
     </div>
   );

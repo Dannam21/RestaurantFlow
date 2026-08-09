@@ -84,6 +84,7 @@ async def get_messages(
     table_id: int | None = None,
     order_id: UUID | None = None,
     sender: MessageSender | None = None,
+    sender_id: str | None = None,
     limit: int = 50,
 ) -> list[Message]:
     statement = select(Message)
@@ -93,6 +94,8 @@ async def get_messages(
         statement = statement.where(Message.order_id == order_id)
     if sender is not None:
         statement = statement.where(Message.sender == sender)
+    if sender_id is not None:
+        statement = statement.where(Message.sender_id == sender_id)
 
     statement = statement.order_by(Message.created_at.desc()).limit(limit)
     result = await session.scalars(statement)

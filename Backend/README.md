@@ -85,8 +85,18 @@ o IA sin su credencial requerida produce un error claro de configuración.
 - `POST /api/customers/verify`: confirma el código y marca el correo como verificado.
 - `POST /api/customers/login`: valida email y contraseña para un cliente verificado.
 
+### Cola de espera
+
+- `POST /api/waitlist`: registra una nueva espera por mesa.
+- `GET /api/waitlist`
+- `GET /api/waitlist?active_only=true`
+- `GET /api/waitlist/{entry_id}`
+- `PUT /api/waitlist/{entry_id}`: permite notificar, sentar o cancelar una espera.
+
 ### Órdenes y mesas
 
+- `GET /api/menu`
+- `GET /api/menu?available_only=true`
 - `POST /api/orders`
 - `GET /api/orders?status=cooking&limit=50`
 - `GET /api/orders/{order_id}`

@@ -40,7 +40,7 @@ export default function LoginScreen({
         email: email.trim().toLowerCase(),
         password,
       });
-      onLogin(role, { name: customer.full_name, email: customer.email });
+      onLogin(role, { id: customer.id, name: customer.full_name, email: customer.email });
     } catch (err) {
       setError(
         err instanceof ApiError

@@ -22,6 +22,15 @@ function getCustomerId(): string {
   return id;
 }
 
+function resolveChatParticipantId(currentUser?: {
+  id?: string;
+  email?: string;
+}): string {
+  if (currentUser?.id) return currentUser.id;
+  if (currentUser?.email) return currentUser.email.trim().toLowerCase();
+  return getCustomerId();
+}
+
 function toChatMessage(message: MessageResponse): ChatMessageType {
   return {
     id: message.id,
@@ -38,9 +47,17 @@ function toChatMessage(message: MessageResponse): ChatMessageType {
 interface UseChatOptions {
   tableId?: number;
   enabled?: boolean;
+  currentUser?: {
+    id?: string;
+    email?: string;
+  };
 }
 
-export function useChat({ tableId, enabled = true }: UseChatOptions = {}) {
+export function useChat({
+  tableId,
+  enabled = true,
+  currentUser,
+}: UseChatOptions = {}) {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
@@ -63,7 +80,11 @@ export function useChat({ tableId, enabled = true }: UseChatOptions = {}) {
 
   const fetchMessages = useCallback(async () => {
     try {
-      const history = await getMessages({ table_id: tableId, limit: 50 });
+      const history = await getMessages({
+        table_id: tableId,
+        sender_id: customerIdRef.current,
+        limit: 50,
+      });
       applyMessages(history);
       setError(null);
     } catch (err) {
@@ -77,8 +98,12 @@ export function useChat({ tableId, enabled = true }: UseChatOptions = {}) {
 
   useEffect(() => {
     if (!enabled) return;
-    if (!customerIdRef.current) {
-      customerIdRef.current = getCustomerId();
+
+    const participantId = resolveChatParticipantId(currentUser);
+    if (customerIdRef.current !== participantId) {
+      customerIdRef.current = participantId;
+      knownIdsRef.current = new Set();
+      setMessages([]);
     }
 
     let cancelled = false;
@@ -95,7 +120,7 @@ export function useChat({ tableId, enabled = true }: UseChatOptions = {}) {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [enabled, fetchMessages]);
+  }, [currentUser, enabled, fetchMessages]);
 
   const send = useCallback(
     async (text: string) => {
@@ -107,7 +132,8 @@ export function useChat({ tableId, enabled = true }: UseChatOptions = {}) {
       try {
         const created = await sendMessage({
           sender: "client",
-          sender_id: customerIdRef.current || getCustomerId(),
+          sender_id:
+            customerIdRef.current || resolveChatParticipantId(currentUser),
           recipient_role: "waiter",
           table_id: tableId,
           text: trimmed,
@@ -126,7 +152,7 @@ export function useChat({ tableId, enabled = true }: UseChatOptions = {}) {
         setIsSending(false);
       }
     },
-    [tableId]
+    [currentUser, tableId]
   );
 
   return { messages, isLoading, isSending, error, sendMessage: send };

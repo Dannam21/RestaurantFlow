@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Order, Table
 from schemas.models import OrderCreate, OrderStatus
-from services import portal_service
+from services import portal_service, service_session_service
 
 
 logger = logging.getLogger(__name__)
@@ -44,6 +44,8 @@ async def create_order(session: AsyncSession, order_data: OrderCreate) -> Order 
 
     table.order_id = order.id
     table.status = "cooking"
+    await service_session_service.ensure_active_session(session, table)
+    await service_session_service.attach_order(session, table.id, order)
 
     await session.commit()
     await session.refresh(order)
@@ -173,7 +175,9 @@ async def update_order_status(
             table.status = "empty"
             table.customers = 0
             table.order_id = None
+            table.customer_id = None
             available_table = table
+            await service_session_service.complete_session_for_table(session, table.id)
 
     order_changed = (
         order.status != previous_status or order.progress != previous_progress

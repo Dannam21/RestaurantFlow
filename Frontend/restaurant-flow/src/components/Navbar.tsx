@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AppRole, AuthUser } from "@/src/types";
 
 function capitalize(text: string) {
@@ -82,6 +82,7 @@ interface NavbarProps {
   currentUser?: AuthUser | null;
   onLoginClick?: () => void;
   onLogout?: () => void;
+  onViewReservations?: () => void;
 }
 
 export default function Navbar({
@@ -90,8 +91,11 @@ export default function Navbar({
   currentUser,
   onLoginClick,
   onLogout,
+  onViewReservations,
 }: NavbarProps) {
   const [now, setNow] = useState<Date | null>(null);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const updateNow = () => setNow(new Date());
@@ -104,12 +108,25 @@ export default function Navbar({
     };
   }, []);
 
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      if (!profileMenuRef.current?.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("mousedown", handleOutsideClick);
+    return () => window.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
   const roleLabel =
     activeRole === "cliente"
       ? "Cliente"
       : activeRole === "mesero"
         ? "Mesero"
         : "Admin";
+  const canViewReservations =
+    activeRole === "cliente" && Boolean(currentUser?.id) && Boolean(onViewReservations);
 
   return (
     <header className="flex h-14 w-full shrink-0 items-center justify-between border-b border-slate-800 bg-[#0b1120] px-4">
@@ -166,18 +183,46 @@ export default function Navbar({
 
         {isAuthenticated ? (
           <div className="flex items-center gap-1">
-            <div className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-xs font-bold text-white">
-                {(currentUser?.name ?? roleLabel).charAt(0).toUpperCase()}
-              </span>
-              <span className="hidden text-left leading-tight sm:block">
-                <span className="block text-xs font-semibold text-white">
-                  {currentUser?.name ?? roleLabel}
+            <div className="relative" ref={profileMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsProfileMenuOpen((value) => !value)}
+                className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-slate-800"
+              >
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-xs font-bold text-white">
+                  {(currentUser?.name ?? roleLabel).charAt(0).toUpperCase()}
                 </span>
-                <span className="block text-[10px] text-slate-400">
-                  Vista: {roleLabel}
+                <span className="hidden text-left leading-tight sm:block">
+                  <span className="block text-xs font-semibold text-white">
+                    {currentUser?.name ?? roleLabel}
+                  </span>
+                  <span className="block text-[10px] text-slate-400">
+                    Vista: {roleLabel}
+                  </span>
                 </span>
-              </span>
+                <span className="text-xs text-slate-400">▾</span>
+              </button>
+
+              {isProfileMenuOpen && (
+                <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 min-w-52 rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
+                  {canViewReservations ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        onViewReservations?.();
+                      }}
+                      className="flex w-full rounded-xl px-3 py-2 text-left text-sm text-slate-200 transition-colors hover:bg-slate-800"
+                    >
+                      Ver mis reservas
+                    </button>
+                  ) : (
+                    <p className="px-3 py-2 text-sm text-slate-500">
+                      Sin opciones disponibles
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <button

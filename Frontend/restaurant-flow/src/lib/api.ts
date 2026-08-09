@@ -37,6 +37,33 @@ async function postJson<TResponse>(
   return data as TResponse;
 }
 
+async function putJson<TResponse>(
+  path: string,
+  body: unknown
+): Promise<TResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError(0, "No se pudo conectar con el servidor. Intenta de nuevo.");
+  }
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const detail =
+      (data && typeof data.detail === "string" && data.detail) ||
+      "Ocurrió un error inesperado.";
+    throw new ApiError(response.status, detail);
+  }
+
+  return data as TResponse;
+}
+
 async function getJson<TResponse>(
   path: string,
   query?: Record<string, string | number | undefined>
@@ -96,6 +123,18 @@ export interface CustomerResponse {
   updated_at: string;
 }
 
+export interface ReservationTrackingResponse {
+  id: string;
+  customer_id: string;
+  table_id: number;
+  party_size: number;
+  status: "reserved" | "released";
+  reserved_at: string;
+  released_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CustomerLoginRequest {
   email: string;
   password: string;
@@ -111,6 +150,12 @@ export function verifyCustomer(payload: CustomerVerifyRequest) {
 
 export function loginCustomer(payload: CustomerLoginRequest) {
   return postJson<CustomerResponse>("/api/customers/login", payload);
+}
+
+export function getCustomerReservations(customerId: string) {
+  return getJson<ReservationTrackingResponse[]>(
+    `/api/customers/${customerId}/reservations`
+  );
 }
 
 export type MessageSender = "client" | "waiter" | "chef" | "admin" | "system";
@@ -147,6 +192,7 @@ export interface GetMessagesParams {
   table_id?: number;
   order_id?: string;
   sender?: MessageSender;
+  sender_id?: string;
   limit?: number;
 }
 
@@ -186,4 +232,204 @@ export interface OrderResponse {
 
 export function createOrder(payload: OrderCreateRequest) {
   return postJson<OrderResponse>("/api/orders", payload);
+}
+
+export function getOrder(orderId: string) {
+  return getJson<OrderResponse>(`/api/orders/${orderId}`);
+}
+
+export function updateOrderStatus(
+  orderId: string,
+  status: "pending" | "analyzing" | "cooking" | "ready" | "served" | "paid"
+) {
+  return putJson<OrderResponse>(`/api/orders/${orderId}/status`, { status });
+}
+
+export interface MenuItemResponse {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  price: number;
+  is_available: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export function getMenuItems(params: { available_only?: boolean } = {}) {
+  return getJson<MenuItemResponse[]>(
+    "/api/menu",
+    params as Record<string, string | number | undefined>
+  );
+}
+
+export interface StaffUserResponse {
+  id: string;
+  name: string;
+  role: "admin" | "waiter" | "chef";
+  email: string;
+}
+
+export function getStaff(params: { role?: "admin" | "waiter" | "chef" } = {}) {
+  return getJson<StaffUserResponse[]>(
+    "/api/staff",
+    params as Record<string, string | number | undefined>
+  );
+}
+
+export interface ServiceSessionResponse {
+  id: string;
+  table_id: number;
+  customer_id: string | null;
+  waiter_id: string | null;
+  order_id: string | null;
+  status: "active" | "completed";
+  seated_at: string;
+  waiter_assigned_at: string | null;
+  order_sent_at: string | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function getServiceSessions(params: { active_only?: boolean } = {}) {
+  return getJson<ServiceSessionResponse[]>(
+    "/api/service-sessions",
+    params as Record<string, string | number | undefined>
+  );
+}
+
+export function assignServiceSessionWaiter(
+  tableId: number,
+  waiterId: string | null
+) {
+  return putJson<ServiceSessionResponse>(
+    `/api/service-sessions/tables/${tableId}/assignment`,
+    { waiter_id: waiterId }
+  );
+}
+
+export function applyWaiterTableAction(
+  tableId: number,
+  waiterId: string,
+  action: "ready" | "served" | "paying" | "paid"
+) {
+  return postJson<ServiceSessionResponse>(
+    `/api/service-sessions/tables/${tableId}/waiter-actions`,
+    {
+      waiter_id: waiterId,
+      action,
+    }
+  );
+}
+
+export type BackendTableStatus =
+  | "empty"
+  | "waiting_order"
+  | "cooking"
+  | "eating"
+  | "paying";
+
+export interface TableResponse {
+  id: number;
+  status: BackendTableStatus;
+  customers: number;
+  capacity: number;
+  order_id: string | null;
+  customer_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TableUpdateRequest {
+  status?: BackendTableStatus;
+  customers?: number;
+  capacity?: number;
+  order_id?: string | null;
+  customer_id?: string | null;
+}
+
+export function getTables() {
+  return getJson<TableResponse[]>("/api/tables");
+}
+
+export function updateTable(tableId: number, payload: TableUpdateRequest) {
+  return putJson<TableResponse>(`/api/tables/${tableId}`, payload);
+}
+
+export type WaitlistStatus = "waiting" | "notified" | "seated" | "cancelled";
+
+export interface WaitlistEntryResponse {
+  id: string;
+  customer_id: string | null;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  party_size: number;
+  status: WaitlistStatus;
+  quoted_wait_minutes: number | null;
+  notes: string | null;
+  table_id: number | null;
+  notified_at: string | null;
+  seated_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WaitlistEntryUpdateRequest {
+  status?: WaitlistStatus;
+  quoted_wait_minutes?: number | null;
+  notes?: string | null;
+  table_id?: number | null;
+}
+
+export interface WaitlistJoinRequest {
+  customer_id?: string | null;
+  full_name: string;
+  email?: string | null;
+  phone?: string | null;
+  party_size: number;
+}
+
+export interface WaitlistJoinResponse {
+  outcome: "seated" | "queued";
+  table_id: number | null;
+  entry: WaitlistEntryResponse | null;
+  estimated_wait_minutes: number | null;
+}
+
+export interface WaitlistAvailabilityResponse {
+  available: boolean;
+  estimated_wait_minutes: number | null;
+  table_id: number | null;
+}
+
+export function getWaitlistAvailability(partySize: number) {
+  return getJson<WaitlistAvailabilityResponse>("/api/waitlist/availability", {
+    party_size: partySize,
+  });
+}
+
+export function joinWaitlist(payload: WaitlistJoinRequest) {
+  return postJson<WaitlistJoinResponse>("/api/waitlist/join", payload);
+}
+
+export function getWaitlistEntry(entryId: string) {
+  return getJson<WaitlistEntryResponse>(`/api/waitlist/${entryId}`);
+}
+
+export function updateWaitlistEntry(
+  entryId: string,
+  payload: WaitlistEntryUpdateRequest
+) {
+  return putJson<WaitlistEntryResponse>(`/api/waitlist/${entryId}`, payload);
+}
+
+export function listWaitlistEntries(
+  params: { status?: WaitlistStatus; active_only?: boolean } = {}
+) {
+  return getJson<WaitlistEntryResponse[]>(
+    "/api/waitlist",
+    params as Record<string, string | number | undefined>
+  );
 }

@@ -73,7 +73,7 @@ export default function RegisterScreen({
         email: email.trim().toLowerCase(),
         code: code.trim(),
       });
-      onRegistered({ name: customer.full_name, email: customer.email });
+      onRegistered({ id: customer.id, name: customer.full_name, email: customer.email });
     } catch (err) {
       setError(
         err instanceof ApiError

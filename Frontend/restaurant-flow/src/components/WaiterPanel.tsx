@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTables } from "@/src/hooks/useTables";
 import type { TeamChannel, TeamMessage } from "@/src/types";
 
 function nowLabel() {
@@ -10,49 +11,10 @@ function nowLabel() {
   });
 }
 
-const CHANNELS: { id: TeamChannel; label: string; badge: number }[] = [
-  { id: "general", label: "General", badge: 3 },
-  { id: "cocina", label: "Cocina", badge: 2 },
-  { id: "meseros", label: "Meseros", badge: 1 },
-];
-
-const INITIAL_MESSAGES: TeamMessage[] = [
-  {
-    id: "1",
-    channel: "general",
-    kind: "mesa",
-    name: "Mesa 4",
-    time: "1:11 p.m.",
-    text: "¿Me pueden traer la cuenta, por favor? 🙏",
-    tone: "sky",
-  },
-  {
-    id: "2",
-    channel: "general",
-    kind: "cocina",
-    name: "Cocina",
-    time: "1:11 p.m.",
-    text: "🍽️ Mesa 2 · Pedido listo (2 hamburguesas)",
-    tone: "amber",
-  },
-  {
-    id: "3",
-    channel: "general",
-    kind: "alerta",
-    name: "Mesa 7",
-    time: "1:12 p.m.",
-    text: "🔔 Solicita atención",
-    tone: "rose",
-  },
-  {
-    id: "4",
-    channel: "general",
-    kind: "mesero",
-    name: "Marcos",
-    time: "1:12 p.m.",
-    text: "Tomaré la Mesa 7",
-    tone: "violet",
-  },
+const CHANNELS: { id: TeamChannel; label: string }[] = [
+  { id: "general", label: "General" },
+  { id: "cocina", label: "Cocina" },
+  { id: "meseros", label: "Meseros" },
 ];
 
 const KIND_ICON: Record<TeamMessage["kind"], string> = {
@@ -79,13 +41,83 @@ const AVATAR_TONE_CLASS: Record<TeamMessage["tone"], string> = {
 };
 
 export default function WaiterPanel() {
+  const { tables } = useTables();
   const [activeChannel, setActiveChannel] = useState<TeamChannel>("general");
-  const [messages, setMessages] = useState<TeamMessage[]>(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState<TeamMessage[]>([]);
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const generatedMessages = tables.flatMap<TeamMessage>((table) => {
+      if (table.status === "waiting_order") {
+        return [
+          {
+            id: `table-${table.id}-waiting`,
+            channel: "general",
+            kind: "mesa",
+            name: `Mesa ${table.id}`,
+            time: nowLabel(),
+            text: "Cliente sentado, pendiente de tomar pedido.",
+            tone: "amber",
+          },
+        ];
+      }
+      if (table.status === "cooking") {
+        return [
+          {
+            id: `table-${table.id}-cooking-general`,
+            channel: "general",
+            kind: "cocina",
+            name: "Cocina",
+            time: nowLabel(),
+            text: `Mesa ${table.id} en preparación.`,
+            tone: "sky",
+          },
+          {
+            id: `table-${table.id}-cooking-kitchen`,
+            channel: "cocina",
+            kind: "cocina",
+            name: "Cocina",
+            time: nowLabel(),
+            text: `Mesa ${table.id} tiene un pedido en cocina.`,
+            tone: "sky",
+          },
+        ];
+      }
+      if (table.status === "paying") {
+        return [
+          {
+            id: `table-${table.id}-paying`,
+            channel: "general",
+            kind: "alerta",
+            name: `Mesa ${table.id}`,
+            time: nowLabel(),
+            text: "Solicita cierre de cuenta.",
+            tone: "emerald",
+          },
+        ];
+      }
+      return [];
+    });
+
+    setMessages((prev) => {
+      const manualMessages = prev.filter((message) => message.name === "Tú");
+      return [...generatedMessages, ...manualMessages];
+    });
+  }, [tables]);
+
   const visibleMessages = messages.filter(
     (message) => message.channel === activeChannel
+  );
+
+  const channelBadges = CHANNELS.reduce<Record<TeamChannel, number>>(
+    (acc, channel) => {
+      acc[channel.id] = messages.filter(
+        (message) => message.channel === channel.id
+      ).length;
+      return acc;
+    },
+    { general: 0, cocina: 0, meseros: 0 }
   );
 
   useEffect(() => {
@@ -165,7 +197,7 @@ export default function WaiterPanel() {
               }`}
             >
               <span># {channel.label}</span>
-              {channel.badge > 0 && (
+              {channelBadges[channel.id] > 0 && (
                 <span
                   className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
                     activeChannel === channel.id
@@ -173,7 +205,7 @@ export default function WaiterPanel() {
                       : "bg-slate-700 text-slate-200"
                   }`}
                 >
-                  {channel.badge}
+                  {channelBadges[channel.id]}
                 </span>
               )}
             </button>
