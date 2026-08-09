@@ -124,10 +124,19 @@ export default function RestaurantMap({
       ref={containerRef}
       className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#0f172a]"
     >
+      <Image
+        src={restaurantBg}
+        alt=""
+        aria-hidden="true"
+        fill
+        priority
+        className="scale-110 select-none object-cover opacity-50 blur-2xl"
+      />
+
       <MenuButton onClick={() => setShowMenu(true)} />
 
       <div
-        className="relative"
+        className="relative scale-140"
         style={{
           width: size.width || "100%",
           height: size.height || "100%",
@@ -138,7 +147,7 @@ export default function RestaurantMap({
           alt="Restaurante El Sabor visto desde arriba"
           fill
           priority
-          className="select-none object-contain"
+          className="select-none object-contain drop-shadow-[0_10px_40px_rgba(0,0,0,0.6)]"
         />
 
         {tables.map((table) => {
@@ -183,30 +192,30 @@ export default function RestaurantMap({
           src={chef}
           alt="Chef"
           className="pointer-events-none absolute z-10 h-auto w-[4%] select-none object-contain drop-shadow-[0_6px_6px_rgba(0,0,0,0.5)]"
-          style={{ top: "8%", left: "63%" }}
+          style={{ top: "18%", left: "56%" }}
         />
 
         <Image
           src={cocinaMesa}
           alt="Mesa de la cocina"
-          className="pointer-events-none absolute z-10 h-auto w-[30%] select-none object-contain"
-          style={{ top: "5%", left: "40%" }}
+          className="pointer-events-none absolute z-10 h-auto w-[23%] select-none object-contain"
+          style={{ top: "17%", left: "43%" }}
         />
 
         <Image
           src={queueRope}
           alt="Fila de espera"
-          className="pointer-events-none absolute z-10 h-auto w-[18%] select-none object-contain"
-          style={{ top: "65%", left: "11%" }}
+          className="pointer-events-none absolute z-10 h-auto w-[14%] select-none object-contain"
+          style={{ top: "59%", left: "24%" }}
         />
         <Image
           src={queueRope}
           alt="Fila de espera"
-          className="pointer-events-none absolute z-10 h-auto w-[18%] select-none object-contain"
-          style={{ top: "65%", left: "25%" }}
+          className="pointer-events-none absolute z-10 h-auto w-[14%] select-none object-contain"
+          style={{ top: "59%", left: "35%" }}
         />
 
-        <AnimatedLantern x="15%" y="95.9%" />
+        <AnimatedLantern x="72%" y="81.9%" />
 
         <WaitingList
           isAuthenticated={isAuthenticated}

@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import logo from "@/assets/logo.png";
 import type { OrderNotificationItem } from "@/src/hooks/useOrderNotifications";
 import type { AppRole, AuthUser } from "@/src/types";
 
@@ -148,20 +150,21 @@ export default function Navbar({
       ? "Cliente"
       : activeRole === "mesero"
         ? "Mesero"
-        : "Admin";
+        : activeRole === "chef"
+          ? "Chef"
+          : "Admin";
   const canViewReservations =
     activeRole === "cliente" && Boolean(currentUser?.id) && Boolean(onViewReservations);
 
   return (
     <header className="flex h-14 w-full shrink-0 items-center justify-between border-b border-slate-800 bg-[#0b1120] px-4">
       <div className="flex items-center gap-3">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-base shadow-md shadow-amber-900/30">
-          🍴
-        </span>
-
-        <h1 className="whitespace-nowrap text-base font-bold text-white">
-          Restaurant<span className="text-orange-500">Flow</span>
-        </h1>
+        <Image
+          src={logo}
+          alt="RestaurantFlow"
+          className="h-11 w-11 shrink-0 select-none object-contain drop-shadow-md"
+          priority
+        />
 
         <span className="hidden h-5 w-px bg-slate-700 sm:block" />
 

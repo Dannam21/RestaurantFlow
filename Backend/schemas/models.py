@@ -458,7 +458,33 @@ class StatsResponse(BaseModel):
     messages_today: int
     alerts_today: int
     revenue_today: float | None = None
+    avg_ticket_today: float | None = None
     satisfaction: float | None = None
+
+
+class SalesByHourEntry(BaseModel):
+    hour: str
+    sales: float
+
+
+class TopDishEntry(BaseModel):
+    name: str
+    count: int
+
+
+class SalesByCategoryEntry(BaseModel):
+    category: str
+    amount: float
+
+
+class PeakHourEntry(BaseModel):
+    hour: str
+    orders: int
+
+
+class CookingTimeEntry(BaseModel):
+    hour: str
+    minutes: float
 
 
 class AgentActivityResponse(BaseModel):

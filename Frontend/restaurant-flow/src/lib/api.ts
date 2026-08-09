@@ -309,6 +309,22 @@ export function getStaff(params: { role?: "admin" | "waiter" | "chef" } = {}) {
   );
 }
 
+export interface StaffLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface StaffLoginResponse {
+  staff_id: string;
+  name: string;
+  role: "admin" | "waiter" | "chef";
+  email: string;
+}
+
+export function loginStaff(payload: StaffLoginRequest) {
+  return postJson<StaffLoginResponse>("/api/staff/login", payload);
+}
+
 export interface ServiceSessionResponse {
   id: string;
   table_id: number;
@@ -478,6 +494,7 @@ export interface StatsResponse {
   messages_today: number;
   alerts_today: number;
   revenue_today: number | null;
+  avg_ticket_today: number | null;
   satisfaction: number | null;
 }
 
@@ -505,4 +522,53 @@ export function getStats() {
 
 export function getDashboard() {
   return getJson<DashboardResponse>("/api/dashboard");
+}
+
+export interface SalesByHourEntry {
+  hour: string;
+  sales: number;
+}
+
+export interface TopDishEntry {
+  name: string;
+  count: number;
+}
+
+export interface SalesByCategoryEntry {
+  category: string;
+  amount: number;
+}
+
+export interface PeakHourEntry {
+  hour: string;
+  orders: number;
+}
+
+export interface CookingTimeEntry {
+  hour: string;
+  minutes: number;
+}
+
+export function getSalesByHour() {
+  return getJson<SalesByHourEntry[]>("/api/stats/sales-by-hour");
+}
+
+export function getTopDishes() {
+  return getJson<TopDishEntry[]>("/api/stats/top-dishes");
+}
+
+export function getSalesByCategory() {
+  return getJson<SalesByCategoryEntry[]>("/api/stats/sales-by-category");
+}
+
+export function getOrdersByStatus() {
+  return getJson<Record<string, number>>("/api/stats/orders-by-status");
+}
+
+export function getPeakHours() {
+  return getJson<PeakHourEntry[]>("/api/stats/peak-hours");
+}
+
+export function getCookingTimeByHour() {
+  return getJson<CookingTimeEntry[]>("/api/stats/cooking-time-by-hour");
 }

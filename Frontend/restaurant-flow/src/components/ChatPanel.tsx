@@ -24,6 +24,7 @@ interface ChatPanelProps {
   currentOrder?: OrderResponse | null;
   myTableId?: number | null;
   myTableStatus?: string | null;
+  onClose?: () => void;
 }
 
 export default function ChatPanel({
@@ -36,6 +37,7 @@ export default function ChatPanel({
   currentOrder,
   myTableId,
   myTableStatus,
+  onClose,
 }: ChatPanelProps) {
   const { messages, isLoading, isSending, error, sendMessage } = useChat({
     tableId,
@@ -103,7 +105,7 @@ export default function ChatPanel({
   }
 
   return (
-    <aside className="flex h-full w-full flex-col border-r border-slate-700/60 bg-[#1e293b]">
+    <aside className="flex h-full w-full flex-col bg-[#1e293b]">
       <div className="border-b border-slate-700/60 px-5 py-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium text-slate-200">Chat en vivo</h2>
@@ -134,6 +136,24 @@ export default function ChatPanel({
             >
               {notificationsOn ? "🔔" : "🔕"}
             </button>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Cerrar chat"
+                title="Cerrar chat"
+                className="rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-700/60 hover:text-white"
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                  <path
+                    d="M6 6l12 12M18 6 6 18"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>

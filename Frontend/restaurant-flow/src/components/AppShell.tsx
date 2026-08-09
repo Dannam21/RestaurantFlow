@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import AdminDashboard from "@/src/components/AdminDashboard";
 import ChatPanel from "@/src/components/ChatPanel";
+import ChefView from "@/src/components/ChefView";
 import LoginScreen from "@/src/components/LoginScreen";
 import Navbar from "@/src/components/Navbar";
 import ReservationHistoryModal from "@/src/components/ReservationHistoryModal";
@@ -87,6 +88,7 @@ export default function AppShell() {
     initialAuthState.currentUser
   );
   const [showReservationHistory, setShowReservationHistory] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -144,27 +146,41 @@ export default function AppShell() {
         <WaiterView />
       ) : resolvedRole === "admin" ? (
         <AdminDashboard />
+      ) : resolvedRole === "chef" ? (
+        <ChefView />
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-          <div className="h-72 w-full shrink-0 md:h-full md:w-1/4 md:min-w-[320px]">
-            <ChatPanel
-              isAuthenticated={resolvedIsAuthenticated}
-              onRequireAuth={requireAuth}
-              currentUser={resolvedUser}
-              notifications={notifications}
-              onDismissNotification={dismissNotification}
-              currentOrder={currentOrder}
-              myTableId={tableId}
-              myTableStatus={tableStatus}
-            />
-          </div>
-          <div className="h-full min-h-0 flex-1">
-            <RestaurantMap
-              isAuthenticated={resolvedIsAuthenticated}
-              onRequireAuth={requireAuth}
-              currentUser={resolvedUser}
-            />
-          </div>
+        <div className="relative min-h-0 flex-1">
+          <RestaurantMap
+            isAuthenticated={resolvedIsAuthenticated}
+            onRequireAuth={requireAuth}
+            currentUser={resolvedUser}
+          />
+
+          {isChatOpen ? (
+            <div className="fixed bottom-6 right-6 z-40 flex h-[32rem] max-h-[75vh] w-96 max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-slate-700/60 shadow-2xl shadow-black/50">
+              <ChatPanel
+                isAuthenticated={resolvedIsAuthenticated}
+                onRequireAuth={requireAuth}
+                currentUser={resolvedUser}
+                notifications={notifications}
+                onDismissNotification={dismissNotification}
+                currentOrder={currentOrder}
+                myTableId={tableId}
+                myTableStatus={tableStatus}
+                onClose={() => setIsChatOpen(false)}
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsChatOpen(true)}
+              aria-label="Abrir chat"
+              title="Abrir chat"
+              className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-2xl text-white shadow-2xl shadow-black/40 transition-transform hover:scale-105 hover:bg-blue-500 active:scale-95"
+            >
+              💬
+            </button>
+          )}
         </div>
       )}
 

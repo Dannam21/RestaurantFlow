@@ -7,6 +7,7 @@ import queueRope from "@/assets/fila.png";
 import chef from "@/assets/cocina/chef.png";
 import cocinaMesa from "@/assets/cocina/mesa.png";
 import Table from "@/src/components/Table";
+import WaitingListSign from "@/src/components/WaitingListSign";
 import { useContainSize } from "@/src/hooks/useContainSize";
 import { useTables } from "@/src/hooks/useTables";
 import {
@@ -140,6 +141,15 @@ export default function AdminMap() {
       ref={containerRef}
       className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#0f172a]"
     >
+      <Image
+        src={restaurantBg}
+        alt=""
+        aria-hidden="true"
+        fill
+        priority
+        className="scale-110 select-none object-cover opacity-50 blur-2xl"
+      />
+
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-32 bg-gradient-to-b from-slate-950 via-slate-950/70 to-transparent" />
 
       <div className="absolute left-4 right-4 top-3 z-30">
@@ -186,7 +196,7 @@ export default function AdminMap() {
       )}
 
       <div
-        className="relative"
+        className="relative scale-140"
         style={{
           width: size.width || "100%",
           height: size.height || "100%",
@@ -197,7 +207,7 @@ export default function AdminMap() {
           alt="Restaurante El Sabor visto desde arriba"
           fill
           priority
-          className="select-none object-contain"
+          className="select-none object-contain drop-shadow-[0_10px_40px_rgba(0,0,0,0.6)]"
         />
 
         {tables.map((table) => {
@@ -267,14 +277,14 @@ export default function AdminMap() {
           src={chef}
           alt="Chef"
           className="pointer-events-none absolute z-10 h-auto w-[4%] select-none object-contain drop-shadow-[0_6px_6px_rgba(0,0,0,0.5)]"
-          style={{ top: "8%", left: "63%" }}
+          style={{ top: "19%", left: "56%" }}
         />
 
         <Image
           src={cocinaMesa}
           alt="Mesa de la cocina"
-          className="pointer-events-none absolute z-10 h-auto w-[30%] select-none object-contain"
-          style={{ top: "5%", left: "40%" }}
+          className="pointer-events-none absolute z-10 h-auto w-[25%] select-none object-contain"
+          style={{ top: "15%", left: "41%" }}
         />
 
         <div
@@ -288,42 +298,16 @@ export default function AdminMap() {
           src={queueRope}
           alt="Fila de espera"
           className="pointer-events-none absolute z-10 h-auto w-[18%] select-none object-contain"
-          style={{ top: "65%", left: "11%" }}
+          style={{ top: "57%", left: "24%" }}
         />
         <Image
           src={queueRope}
           alt="Fila de espera"
           className="pointer-events-none absolute z-10 h-auto w-[18%] select-none object-contain"
-          style={{ top: "65%", left: "25%" }}
+          style={{ top: "57%", left: "38%" }}
         />
 
-        <div
-          className="absolute z-20 w-40 rounded-md border border-amber-900/60 bg-slate-900/85 p-2.5 shadow-lg shadow-black/40 backdrop-blur-sm"
-          style={{ top: "60%", left: "9%" }}
-        >
-          <div className="flex items-center gap-1.5 text-amber-400">
-            <span className="text-sm">👥</span>
-            <span className="text-[11px] font-semibold uppercase tracking-wide">
-              Fila de espera
-            </span>
-          </div>
-          <p className="mt-1.5 text-xs font-medium text-white">
-            {waitlistEntries.length === 0
-              ? "Nadie está esperando todavía."
-              : `${waitlistEntries.length} ${waitlistEntries.length === 1 ? "persona esperando" : "personas esperando"}`}
-          </p>
-          {waitlistEntries.length > 0 && (
-            <p className="mt-0.5 text-[11px] text-amber-200/80">
-              ~{Math.round(
-                waitlistEntries.reduce(
-                  (sum, entry) => sum + (entry.quoted_wait_minutes ?? 0),
-                  0
-                ) / waitlistEntries.length
-              )}{" "}
-              min de espera
-            </p>
-          )}
-        </div>
+        <WaitingListSign activeCount={waitlistEntries.length} />
       </div>
     </div>
   );

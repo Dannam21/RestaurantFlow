@@ -1,7 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useState, type FormEvent } from "react";
-import { ApiError, loginCustomer } from "@/src/lib/api";
+import logo from "@/assets/logo.png";
+import { ApiError, loginCustomer, loginStaff } from "@/src/lib/api";
+import { QUICK_LOGIN_OPTIONS, type QuickLoginOption } from "@/src/utils/quickLogin";
 import type { AppRole, AuthUser } from "@/src/types";
 
 interface LoginScreenProps {
@@ -9,6 +12,13 @@ interface LoginScreenProps {
   onClose: () => void;
   onSwitchToRegister?: () => void;
 }
+
+const QUICK_LOGIN_STYLE: Record<QuickLoginOption["role"], string> = {
+  cliente: "border-blue-500/40 bg-blue-500/10 text-blue-200 hover:bg-blue-500/20",
+  admin: "border-violet-500/40 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20",
+  mesero: "border-orange-500/40 bg-orange-500/10 text-orange-200 hover:bg-orange-500/20",
+  chef: "border-rose-500/40 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20",
+};
 
 export default function LoginScreen({
   onLogin,
@@ -21,26 +31,32 @@ export default function LoginScreen({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function performLogin(
+    targetRole: AppRole,
+    targetEmail: string,
+    targetPassword: string
+  ) {
     if (isSubmitting) return;
     setError(null);
-
-    if (role !== "cliente") {
-      setIsSubmitting(true);
-      window.setTimeout(() => {
-        onLogin(role);
-      }, 700);
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      const customer = await loginCustomer({
-        email: email.trim().toLowerCase(),
-        password,
-      });
-      onLogin(role, { id: customer.id, name: customer.full_name, email: customer.email });
+      if (targetRole === "cliente") {
+        const customer = await loginCustomer({
+          email: targetEmail.trim().toLowerCase(),
+          password: targetPassword,
+        });
+        onLogin(targetRole, {
+          id: customer.id,
+          name: customer.full_name,
+          email: customer.email,
+        });
+      } else {
+        const staff = await loginStaff({
+          email: targetEmail.trim().toLowerCase(),
+          password: targetPassword,
+        });
+        onLogin(targetRole, { id: staff.staff_id, name: staff.name, email: staff.email });
+      }
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -50,6 +66,18 @@ export default function LoginScreen({
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await performLogin(role, email, password);
+  }
+
+  function handleQuickLogin(option: QuickLoginOption) {
+    setRole(option.role);
+    setEmail(option.email);
+    setPassword(option.password);
+    void performLogin(option.role, option.email, option.password);
   }
 
   return (
@@ -72,12 +100,12 @@ export default function LoginScreen({
         </button>
 
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-2xl shadow-lg shadow-amber-900/30">
-            🍴
-          </span>
-          <h1 className="mt-4 text-xl font-bold text-white">
-            Restaurant<span className="text-orange-500">Flow</span>
-          </h1>
+          <Image
+            src={logo}
+            alt="RestaurantFlow"
+            className="h-20 w-20 select-none object-contain drop-shadow-lg"
+            priority
+          />
           <p className="mt-1 text-sm text-slate-400">
             Inicia sesión para continuar
           </p>
@@ -97,6 +125,7 @@ export default function LoginScreen({
               <option value="cliente">Cliente</option>
               <option value="mesero">Mesero</option>
               <option value="admin">Admin</option>
+              <option value="chef">Chef</option>
             </select>
           </div>
 
@@ -152,6 +181,25 @@ export default function LoginScreen({
             {isSubmitting ? "Iniciando sesión..." : "Iniciar sesión"}
           </button>
         </form>
+
+        <div className="mt-5 border-t border-slate-800 pt-4">
+          <p className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            Quick login para demostración
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {QUICK_LOGIN_OPTIONS.map((option) => (
+              <button
+                key={option.role}
+                type="button"
+                onClick={() => handleQuickLogin(option)}
+                disabled={isSubmitting}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-2.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${QUICK_LOGIN_STYLE[option.role]}`}
+              >
+                🔓 {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {onSwitchToRegister && (
           <div className="mt-5 flex items-center justify-center gap-1.5 text-xs text-slate-400">

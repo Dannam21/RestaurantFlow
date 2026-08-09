@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useState, type FormEvent } from "react";
+import logo from "@/assets/logo.png";
 import { ApiError, registerCustomer } from "@/src/lib/api";
 import type { AuthUser } from "@/src/types";
 
@@ -76,12 +78,12 @@ export default function RegisterScreen({
         </button>
 
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-2xl shadow-lg shadow-amber-900/30">
-            🍴
-          </span>
-          <h1 className="mt-4 text-xl font-bold text-white">
-            Restaurant<span className="text-orange-500">Flow</span>
-          </h1>
+          <Image
+            src={logo}
+            alt="RestaurantFlow"
+            className="h-20 w-20 select-none object-contain drop-shadow-lg"
+            priority
+          />
           <p className="mt-1 text-sm text-slate-400">Crea tu cuenta de cliente</p>
         </div>
 

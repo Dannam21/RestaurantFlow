@@ -3,17 +3,17 @@ import type { BackendTableStatus } from "@/src/lib/api";
 import type { TableAlert } from "@/src/types";
 
 export const TABLE_POSITIONS: Record<number, { x: string; y: string }> = {
-  1: { x: "32%", y: "31%" },
-  2: { x: "46%", y: "31%" },
-  3: { x: "60%", y: "31%" },
-  4: { x: "74%", y: "31%" },
-  5: { x: "88%", y: "31%" },
+  1: { x: "33%", y: "37%" },
+  2: { x: "43%", y: "37%" },
+  3: { x: "53%", y: "37%" },
+  4: { x: "63%", y: "37%" },
+  5: { x: "73%", y: "37%" },
 
-  6: { x: "32%", y: "51%" },
-  7: { x: "46%", y: "51%" },
-  8: { x: "60%", y: "51%" },
-  9: { x: "74%", y: "51%" },
-  10: { x: "88%", y: "51%" },
+  6: { x: "33%", y: "48%" },
+  7: { x: "43%", y: "48%" },
+  8: { x: "53%", y: "48%" },
+  9: { x: "63%", y: "48%" },
+  10: { x: "73%", y: "48%" },
 };
 
 export const BACKEND_TO_UI_STATUS: Record<BackendTableStatus, TableStatus> = {

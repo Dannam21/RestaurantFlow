@@ -10,7 +10,7 @@ export interface ChatMessageType {
   status?: MessageStatus;
 }
 
-export type AppRole = "cliente" | "mesero" | "admin";
+export type AppRole = "cliente" | "mesero" | "admin" | "chef";
 
 export interface AuthUser {
   id?: string;

@@ -7,8 +7,10 @@ import queueRope from "@/assets/fila.png";
 import chef from "@/assets/cocina/chef.png";
 import cocinaMesa from "@/assets/cocina/mesa.png";
 import Table from "@/src/components/Table";
+import WaitingListSign from "@/src/components/WaitingListSign";
 import { useContainSize } from "@/src/hooks/useContainSize";
 import { useTables } from "@/src/hooks/useTables";
+import { useWaitlist } from "@/src/hooks/useWaitlist";
 import {
   applyWaiterTableAction,
   ApiError,
@@ -39,6 +41,7 @@ export default function WaiterMap({
   onAssign,
 }: WaiterMapProps) {
   const { tables, isLoading, error, refetch } = useTables();
+  const { activeCount: waitlistActiveCount } = useWaitlist();
   const { containerRef, size } = useContainSize(3 / 2);
   const [openTableId, setOpenTableId] = useState<string | null>(null);
   const [openTableOrder, setOpenTableOrder] = useState<OrderResponse | null>(null);
@@ -125,6 +128,15 @@ export default function WaiterMap({
       ref={containerRef}
       className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#0f172a]"
     >
+      <Image
+        src={restaurantBg}
+        alt=""
+        aria-hidden="true"
+        fill
+        priority
+        className="scale-110 select-none object-cover opacity-50 blur-2xl"
+      />
+
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-28 bg-gradient-to-b from-slate-950 via-slate-950/70 to-transparent" />
 
       <div className="absolute left-1/2 top-4 z-30 flex max-w-[calc(100%-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2">
@@ -148,7 +160,7 @@ export default function WaiterMap({
       )}
 
       <div
-        className="relative"
+        className="relative scale-140"
         style={{
           width: size.width || "100%",
           height: size.height || "100%",
@@ -159,7 +171,7 @@ export default function WaiterMap({
           alt="Restaurante El Sabor visto desde arriba"
           fill
           priority
-          className="select-none object-contain"
+          className="select-none object-contain drop-shadow-[0_10px_40px_rgba(0,0,0,0.6)]"
         />
 
         {tables.map((table) => {
@@ -367,17 +379,18 @@ export default function WaiterMap({
         <Image
           src={queueRope}
           alt="Fila de espera"
-          className="pointer-events-none absolute z-10 h-auto w-[18%] select-none object-contain"
-          style={{ top: "65%", left: "11%" }}
+          className="pointer-events-none absolute z-10 h-auto w-[14%] select-none object-contain"
+          style={{ top: "59%", left: "27%" }}
         />
 
         <Image
           src={queueRope}
           alt="Fila de espera"
-          className="pointer-events-none absolute z-10 h-auto w-[18%] select-none object-contain"
-          style={{ top: "65%", left: "25%" }}
+          className="pointer-events-none absolute z-10 h-auto w-[14%] select-none object-contain"
+          style={{ top: "59%", left: "38%" }}
         />
 
+        <WaitingListSign activeCount={waitlistActiveCount} />
       </div>
     </div>
   );
