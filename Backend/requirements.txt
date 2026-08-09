@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+python-dotenv
+sqlalchemy>=2.0
+greenlet
+asyncpg
+alembic
+psycopg2-binary
+httpx
+anthropic
+requests>=2.31.0
+passlib
+bcrypt==4.0.1
