@@ -1,5 +1,10 @@
-import { redirect } from 'next/navigation';
-
 export default function Home() {
-  redirect('/login');
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <h1>RestaurantFlow - Redireccionando...</h1>
+      <script>
+        {`window.location.href = '/login';`}
+      </script>
+    </div>
+  );
 }
