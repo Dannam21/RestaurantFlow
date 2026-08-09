@@ -6,6 +6,7 @@ import ChatPanel from "@/src/components/ChatPanel";
 import ChefView from "@/src/components/ChefView";
 import LoginScreen from "@/src/components/LoginScreen";
 import Navbar from "@/src/components/Navbar";
+import NotificationContainer from "@/src/components/NotificationContainer";
 import ReservationHistoryModal from "@/src/components/ReservationHistoryModal";
 import RegisterScreen from "@/src/components/RegisterScreen";
 import RestaurantMap from "@/src/components/RestaurantMap";
@@ -142,6 +143,11 @@ export default function AppShell() {
         }}
       />
 
+      <NotificationContainer
+        notifications={notifications}
+        onDismiss={dismissNotification}
+      />
+
       {resolvedRole === "mesero" ? (
         <WaiterView />
       ) : resolvedRole === "admin" ? (
@@ -162,8 +168,6 @@ export default function AppShell() {
                 isAuthenticated={resolvedIsAuthenticated}
                 onRequireAuth={requireAuth}
                 currentUser={resolvedUser}
-                notifications={notifications}
-                onDismissNotification={dismissNotification}
                 currentOrder={currentOrder}
                 myTableId={tableId}
                 myTableStatus={tableStatus}

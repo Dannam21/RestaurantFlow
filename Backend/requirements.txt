@@ -9,6 +9,7 @@ alembic
 psycopg2-binary
 httpx
 anthropic
+google-genai
 requests>=2.31.0
 passlib
 bcrypt==4.0.1

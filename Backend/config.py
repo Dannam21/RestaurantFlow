@@ -18,11 +18,14 @@ class Settings(BaseSettings):
     portal_secret_key: str | None = None
     portal_api_url: str = "https://api.useportal.co"
     portal_sender_id: str = "restaurantflow-backend"
+    portal_project_id: str | None = None
     restaurant_id: int = 1
     ai_enabled: bool = False
     anthropic_api_key: str | None = None
     ai_model: str = "claude-haiku-4-5-20251001"
     ai_timeout_seconds: float = 15.0
+    google_api_key: str | None = None
+    chat_ai_model: str = "gemini-3.5-flash"
     monitoring_enabled: bool = True
     predictor_interval_seconds: int = Field(default=30, ge=1)
     supervisor_interval_seconds: int = Field(default=60, ge=1)

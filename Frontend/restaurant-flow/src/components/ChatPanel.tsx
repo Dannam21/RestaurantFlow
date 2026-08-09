@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Message, { mentionsMenu } from "@/src/components/Message";
+import Message from "@/src/components/Message";
 import MenuModal from "@/src/components/MenuModal";
-import NotificationContainer from "@/src/components/NotificationContainer";
 import PaymentButton from "@/src/components/PaymentButton";
 import { useChat } from "@/src/hooks/useChat";
-import type { OrderNotificationItem } from "@/src/hooks/useOrderNotifications";
 import type { OrderResponse } from "@/src/lib/api";
 import {
   isNotificationsEnabled,
@@ -19,8 +17,6 @@ interface ChatPanelProps {
   onRequireAuth: () => void;
   tableId?: number;
   currentUser?: AuthUser | null;
-  notifications: OrderNotificationItem[];
-  onDismissNotification: (id: string) => void;
   currentOrder?: OrderResponse | null;
   myTableId?: number | null;
   myTableStatus?: string | null;
@@ -32,8 +28,6 @@ export default function ChatPanel({
   onRequireAuth,
   tableId,
   currentUser,
-  notifications,
-  onDismissNotification,
   currentOrder,
   myTableId,
   myTableStatus,
@@ -48,7 +42,6 @@ export default function ChatPanel({
   const [showMenu, setShowMenu] = useState(false);
   const [notificationsOn, setNotificationsOn] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const hasAutoOpenedMenuRef = useRef(false);
 
   useEffect(() => {
     setNotificationsOn(isNotificationsEnabled());
@@ -66,19 +59,6 @@ export default function ChatPanel({
       behavior: "smooth",
     });
   }, [messages, isSending]);
-
-  useEffect(() => {
-    if (hasAutoOpenedMenuRef.current) return;
-
-    const lastBotMessage = [...messages]
-      .reverse()
-      .find((message) => message.sender === "bot");
-
-    if (lastBotMessage && mentionsMenu(lastBotMessage.text)) {
-      hasAutoOpenedMenuRef.current = true;
-      setShowMenu(true);
-    }
-  }, [messages]);
 
   async function handleSend() {
     const text = draft.trim();
@@ -232,11 +212,6 @@ export default function ChatPanel({
       </div>
 
       {showMenu && <MenuModal onClose={() => setShowMenu(false)} />}
-
-      <NotificationContainer
-        notifications={notifications}
-        onDismiss={onDismissNotification}
-      />
     </aside>
   );
 }

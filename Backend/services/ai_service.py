@@ -3,8 +3,8 @@ import logging
 from typing import TypeVar
 from uuid import UUID
 
-import requests
 from anthropic import AsyncAnthropic
+from google import genai
 from pydantic import BaseModel
 
 from config import settings
@@ -14,9 +14,7 @@ from services import portal_service
 logger = logging.getLogger(__name__)
 ResponseModel = TypeVar("ResponseModel", bound=BaseModel)
 
-OLLAMA_GENERATE_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "gemma4:e2b"
-OLLAMA_TIMEOUT_SECONDS = 30
+_gemini_client: genai.Client | None = None
 BOT_SYSTEM_PROMPT = (
     "Eres un bot amable de restaurante que ayuda a clientes en español. "
     "Responde de manera breve y amigable."
@@ -80,25 +78,33 @@ def _build_bot_prompt(message: str, order_context: dict | None) -> str:
     return "\n".join(prompt_lines)
 
 
-def _call_ollama_sync(prompt: str) -> str:
-    response = requests.post(
-        OLLAMA_GENERATE_URL,
-        json={"model": OLLAMA_MODEL, "prompt": prompt, "stream": False},
-        timeout=OLLAMA_TIMEOUT_SECONDS,
+def _get_gemini_client() -> genai.Client:
+    global _gemini_client
+    if _gemini_client is None:
+        if not settings.google_api_key:
+            raise AIUnavailableError("GOOGLE_API_KEY is not configured")
+        _gemini_client = genai.Client(api_key=settings.google_api_key)
+    return _gemini_client
+
+
+def _call_gemini_sync(prompt: str) -> str:
+    client = _get_gemini_client()
+    response = client.models.generate_content(
+        model=settings.chat_ai_model,
+        contents=prompt,
     )
-    response.raise_for_status()
-    reply = str(response.json().get("response", "")).strip()
+    reply = (response.text or "").strip()
     if not reply:
-        raise ValueError("Ollama returned an empty response")
+        raise ValueError("Gemini returned an empty response")
     return reply
 
 
 async def get_bot_response(message: str, order_context: dict | None = None) -> str:
     prompt = _build_bot_prompt(message, order_context)
     try:
-        return await asyncio.to_thread(_call_ollama_sync, prompt)
+        return await asyncio.to_thread(_call_gemini_sync, prompt)
     except Exception:
-        logger.exception("Ollama request failed model=%s", OLLAMA_MODEL)
+        logger.exception("Gemini request failed model=%s", settings.chat_ai_model)
         return BOT_FALLBACK_RESPONSE
 
 
