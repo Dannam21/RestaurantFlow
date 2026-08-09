@@ -101,18 +101,6 @@ export interface CustomerRegisterRequest {
   password: string;
 }
 
-export interface CustomerRegisterResponse {
-  message: string;
-  customer_id: string;
-  email: string;
-  expires_in_minutes: number;
-}
-
-export interface CustomerVerifyRequest {
-  email: string;
-  code: string;
-}
-
 export interface CustomerResponse {
   id: string;
   full_name: string;
@@ -141,11 +129,7 @@ export interface CustomerLoginRequest {
 }
 
 export function registerCustomer(payload: CustomerRegisterRequest) {
-  return postJson<CustomerRegisterResponse>("/api/customers/register", payload);
-}
-
-export function verifyCustomer(payload: CustomerVerifyRequest) {
-  return postJson<CustomerResponse>("/api/customers/verify", payload);
+  return postJson<CustomerResponse>("/api/customers/register", payload);
 }
 
 export function loginCustomer(payload: CustomerLoginRequest) {
@@ -158,7 +142,7 @@ export function getCustomerReservations(customerId: string) {
   );
 }
 
-export type MessageSender = "client" | "waiter" | "chef" | "admin" | "system";
+export type MessageSender = "client" | "waiter" | "chef" | "admin" | "system" | "bot";
 export type MessageRecipient = "client" | "waiter" | "chef" | "admin";
 export type MessageType =
   | "message"
@@ -193,6 +177,8 @@ export interface GetMessagesParams {
   order_id?: string;
   sender?: MessageSender;
   sender_id?: string;
+  recipient_role?: MessageRecipient;
+  message_type?: MessageType;
   limit?: number;
 }
 
@@ -271,6 +257,8 @@ export interface OrderDishResponse {
   notes: string | null;
   price: number | null;
   status: OrderDishStatus;
+  estimated_time: number;
+  progress: number;
   delivered_at: string | null;
   created_at: string;
   updated_at: string;

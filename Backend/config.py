@@ -14,15 +14,6 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://postgres:password@localhost:5432/restaurant_flow"
     )
     database_echo: bool = False
-    smtp_host: str | None = None
-    smtp_port: int = 587
-    smtp_username: str | None = None
-    smtp_password: str | None = None
-    smtp_use_tls: bool = True
-    smtp_use_ssl: bool = False
-    smtp_from_email: str | None = None
-    smtp_from_name: str = "RestaurantFlow"
-    customer_verification_code_ttl_minutes: int = Field(default=10, ge=1, le=60)
     portal_enabled: bool = False
     portal_secret_key: str | None = None
     portal_api_url: str = "https://api.useportal.co"
@@ -44,21 +35,10 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_portal_configuration(self) -> "Settings":
         is_production = self.app_env.lower() == "production"
-        email_fields = (
-            self.smtp_host,
-            self.smtp_username,
-            self.smtp_password,
-            self.smtp_from_email,
-        )
-        smtp_partially_configured = any(email_fields) and not all(email_fields)
         if is_production and self.portal_enabled and not self.portal_secret_key:
             raise ValueError("PORTAL_SECRET_KEY is required when PORTAL_ENABLED=true")
         if is_production and self.ai_enabled and not self.anthropic_api_key:
             raise ValueError("ANTHROPIC_API_KEY is required when AI_ENABLED=true")
-        if smtp_partially_configured:
-            raise ValueError(
-                "SMTP_HOST, SMTP_USERNAME, SMTP_PASSWORD and SMTP_FROM_EMAIL must be configured together"
-            )
         return self
 
     @property

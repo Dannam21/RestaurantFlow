@@ -4,7 +4,13 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import AsyncSessionLocal, get_db
-from schemas.models import MessageCreate, MessageResponse, MessageSender
+from schemas.models import (
+    MessageCreate,
+    MessageRecipient,
+    MessageResponse,
+    MessageSender,
+    MessageType,
+)
 from services import ai_service, message_service, waitlist_service
 
 
@@ -76,6 +82,8 @@ async def list_messages(
     order_id: UUID | None = None,
     sender: MessageSender | None = None,
     sender_id: str | None = None,
+    recipient_role: MessageRecipient | None = None,
+    message_type: MessageType | None = None,
     limit: int = Query(default=50, ge=1, le=100),
     session: AsyncSession = Depends(get_db),
 ) -> list[MessageResponse]:
@@ -85,6 +93,8 @@ async def list_messages(
         order_id=order_id,
         sender=sender,
         sender_id=sender_id,
+        recipient_role=recipient_role,
+        message_type=message_type,
         limit=limit,
     )
     return [MessageResponse.model_validate(message) for message in messages]

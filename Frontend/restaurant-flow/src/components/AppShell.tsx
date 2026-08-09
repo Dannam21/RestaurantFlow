@@ -9,6 +9,7 @@ import ReservationHistoryModal from "@/src/components/ReservationHistoryModal";
 import RegisterScreen from "@/src/components/RegisterScreen";
 import RestaurantMap from "@/src/components/RestaurantMap";
 import WaiterView from "@/src/components/WaiterView";
+import { useOrderNotifications } from "@/src/hooks/useOrderNotifications";
 import type { AppRole, AuthUser } from "@/src/types";
 
 type AuthMode = "login" | "register";
@@ -115,12 +116,20 @@ export default function AppShell() {
   const resolvedRole = isHydrated ? activeRole : "cliente";
   const resolvedUser = isHydrated ? currentUser : null;
 
+  const { notifications, dismissNotification, currentOrder, tableId, tableStatus } =
+    useOrderNotifications({
+      currentUser: resolvedUser,
+      enabled: resolvedIsAuthenticated && resolvedRole === "cliente",
+    });
+
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-[#0f172a]">
       <Navbar
         isAuthenticated={resolvedIsAuthenticated}
         activeRole={resolvedRole}
         currentUser={resolvedUser}
+        notifications={notifications}
+        onDismissNotification={dismissNotification}
         onLoginClick={requireAuth}
         onViewReservations={() => setShowReservationHistory(true)}
         onLogout={() => {
@@ -142,6 +151,11 @@ export default function AppShell() {
               isAuthenticated={resolvedIsAuthenticated}
               onRequireAuth={requireAuth}
               currentUser={resolvedUser}
+              notifications={notifications}
+              onDismissNotification={dismissNotification}
+              currentOrder={currentOrder}
+              myTableId={tableId}
+              myTableStatus={tableStatus}
             />
           </div>
           <div className="h-full min-h-0 flex-1">

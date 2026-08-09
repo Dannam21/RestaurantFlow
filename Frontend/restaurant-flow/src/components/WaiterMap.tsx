@@ -127,7 +127,7 @@ export default function WaiterMap({
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-28 bg-gradient-to-b from-slate-950 via-slate-950/70 to-transparent" />
 
-      <div className="absolute left-4 top-4 z-30 flex max-w-[calc(100%-2rem)] flex-wrap items-center gap-2">
+      <div className="absolute left-1/2 top-4 z-30 flex max-w-[calc(100%-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2">
         <div className="rounded-full border border-slate-700/80 bg-slate-950/85 px-3 py-1.5 text-xs text-slate-200 shadow-lg backdrop-blur-sm">
           {isLoading ? "Cargando salón..." : `${occupiedTables}/${tables.length || 10} mesas activas`}
         </div>
@@ -142,7 +142,7 @@ export default function WaiterMap({
       </div>
 
       {error && (
-        <div className="absolute right-4 top-4 z-30 max-w-sm rounded-2xl border border-rose-500/30 bg-rose-950/85 px-4 py-3 text-sm text-rose-100 shadow-xl backdrop-blur-sm">
+        <div className="absolute left-1/2 top-16 z-30 max-w-sm -translate-x-1/2 rounded-2xl border border-rose-500/30 bg-rose-950/85 px-4 py-3 text-sm text-rose-100 shadow-xl backdrop-blur-sm">
           {error}
         </div>
       )}
@@ -377,6 +377,7 @@ export default function WaiterMap({
           className="pointer-events-none absolute z-10 h-auto w-[18%] select-none object-contain"
           style={{ top: "65%", left: "25%" }}
         />
+
       </div>
     </div>
   );

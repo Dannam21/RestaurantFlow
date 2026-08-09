@@ -3,7 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import Message, { mentionsMenu } from "@/src/components/Message";
 import MenuModal from "@/src/components/MenuModal";
+import NotificationContainer from "@/src/components/NotificationContainer";
+import PaymentButton from "@/src/components/PaymentButton";
 import { useChat } from "@/src/hooks/useChat";
+import type { OrderNotificationItem } from "@/src/hooks/useOrderNotifications";
+import type { OrderResponse } from "@/src/lib/api";
+import {
+  isNotificationsEnabled,
+  setNotificationsEnabled,
+} from "@/src/utils/notificationSound";
 import type { AuthUser } from "@/src/types";
 
 interface ChatPanelProps {
@@ -11,6 +19,11 @@ interface ChatPanelProps {
   onRequireAuth: () => void;
   tableId?: number;
   currentUser?: AuthUser | null;
+  notifications: OrderNotificationItem[];
+  onDismissNotification: (id: string) => void;
+  currentOrder?: OrderResponse | null;
+  myTableId?: number | null;
+  myTableStatus?: string | null;
 }
 
 export default function ChatPanel({
@@ -18,6 +31,11 @@ export default function ChatPanel({
   onRequireAuth,
   tableId,
   currentUser,
+  notifications,
+  onDismissNotification,
+  currentOrder,
+  myTableId,
+  myTableStatus,
 }: ChatPanelProps) {
   const { messages, isLoading, isSending, error, sendMessage } = useChat({
     tableId,
@@ -26,8 +44,19 @@ export default function ChatPanel({
   });
   const [draft, setDraft] = useState("");
   const [showMenu, setShowMenu] = useState(false);
+  const [notificationsOn, setNotificationsOn] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasAutoOpenedMenuRef = useRef(false);
+
+  useEffect(() => {
+    setNotificationsOn(isNotificationsEnabled());
+  }, []);
+
+  function toggleNotifications() {
+    const next = !notificationsOn;
+    setNotificationsOn(next);
+    setNotificationsEnabled(next);
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -78,17 +107,47 @@ export default function ChatPanel({
       <div className="border-b border-slate-700/60 px-5 py-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium text-slate-200">Chat en vivo</h2>
-          <div className="flex items-center gap-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-            </span>
-            <span className="text-xs font-medium text-emerald-400">
-              En línea
-            </span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              <span className="text-xs font-medium text-emerald-400">
+                En línea
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={toggleNotifications}
+              aria-label={
+                notificationsOn
+                  ? "Silenciar notificaciones"
+                  : "Activar notificaciones"
+              }
+              title={
+                notificationsOn
+                  ? "Silenciar notificaciones"
+                  : "Activar notificaciones"
+              }
+              className="rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-700/60 hover:text-white"
+            >
+              {notificationsOn ? "🔔" : "🔕"}
+            </button>
           </div>
         </div>
       </div>
+
+      {myTableId && currentOrder && (
+        <div className="border-b border-slate-700/60 px-4 py-3">
+          <PaymentButton
+            tableId={myTableId}
+            order={currentOrder}
+            tableStatus={myTableStatus ?? null}
+            currentUser={currentUser}
+          />
+        </div>
+      )}
 
       <div
         ref={scrollRef}
@@ -153,6 +212,11 @@ export default function ChatPanel({
       </div>
 
       {showMenu && <MenuModal onClose={() => setShowMenu(false)} />}
+
+      <NotificationContainer
+        notifications={notifications}
+        onDismiss={onDismissNotification}
+      />
     </aside>
   );
 }

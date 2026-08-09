@@ -1,7 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { OrderNotificationItem } from "@/src/hooks/useOrderNotifications";
 import type { AppRole, AuthUser } from "@/src/types";
+
+const LEVEL_ICON: Record<OrderNotificationItem["level"], string> = {
+  info: "⏳",
+  warning: "🔔",
+  success: "🎉",
+};
+
+function timeAgoLabel(createdAt: number, now: Date | null): string {
+  if (!now) return "";
+  const minutes = Math.max(0, Math.floor((now.getTime() - createdAt) / 60000));
+  if (minutes < 1) return "justo ahora";
+  if (minutes === 1) return "hace 1 min";
+  return `hace ${minutes} min`;
+}
 
 function capitalize(text: string) {
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -80,6 +95,8 @@ interface NavbarProps {
   isAuthenticated: boolean;
   activeRole: AppRole;
   currentUser?: AuthUser | null;
+  notifications?: OrderNotificationItem[];
+  onDismissNotification?: (id: string) => void;
   onLoginClick?: () => void;
   onLogout?: () => void;
   onViewReservations?: () => void;
@@ -89,13 +106,17 @@ export default function Navbar({
   isAuthenticated,
   activeRole,
   currentUser,
+  notifications = [],
+  onDismissNotification,
   onLoginClick,
   onLogout,
   onViewReservations,
 }: NavbarProps) {
   const [now, setNow] = useState<Date | null>(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isNotificationsMenuOpen, setIsNotificationsMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const notificationsMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const updateNow = () => setNow(new Date());
@@ -112,6 +133,9 @@ export default function Navbar({
     function handleOutsideClick(event: MouseEvent) {
       if (!profileMenuRef.current?.contains(event.target as Node)) {
         setIsProfileMenuOpen(false);
+      }
+      if (!notificationsMenuRef.current?.contains(event.target as Node)) {
+        setIsNotificationsMenuOpen(false);
       }
     }
 
@@ -160,16 +184,60 @@ export default function Navbar({
       </div>
 
       <div className="flex items-center gap-1">
-        <button
-          type="button"
-          aria-label="Notificaciones"
-          className="relative flex h-8 w-8 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
-        >
-          <BellIcon />
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-[#0b1120]">
-            3
-          </span>
-        </button>
+        <div className="relative" ref={notificationsMenuRef}>
+          <button
+            type="button"
+            aria-label="Notificaciones"
+            onClick={() => setIsNotificationsMenuOpen((value) => !value)}
+            className="relative flex h-8 w-8 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+          >
+            <BellIcon />
+            {notifications.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-[#0b1120]">
+                {notifications.length > 9 ? "9+" : notifications.length}
+              </span>
+            )}
+          </button>
+
+          {isNotificationsMenuOpen && (
+            <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 max-h-96 w-80 overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
+              {notifications.length === 0 ? (
+                <p className="px-3 py-4 text-center text-sm text-slate-500">
+                  No tienes notificaciones nuevas.
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  {[...notifications].reverse().map((notification) => (
+                    <div
+                      key={notification.id}
+                      className="flex items-start gap-2.5 rounded-xl px-3 py-2.5 transition-colors hover:bg-slate-800"
+                    >
+                      <span className="text-base">
+                        {LEVEL_ICON[notification.level]}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-slate-100">
+                          {notification.text}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-slate-500">
+                          {timeAgoLabel(notification.createdAt, now)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onDismissNotification?.(notification.id)}
+                        aria-label="Descartar notificación"
+                        className="shrink-0 text-xs text-slate-500 transition-colors hover:text-white"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <button
           type="button"

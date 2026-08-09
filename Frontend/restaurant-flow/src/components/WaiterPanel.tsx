@@ -154,7 +154,7 @@ export default function WaiterPanel() {
   }
 
   return (
-    <aside className="flex h-full w-full flex-col border-r border-slate-700/60 bg-[#1e293b]">
+    <aside className="flex h-full w-full flex-col bg-[#1e293b]">
       <div className="flex items-center justify-between border-b border-slate-700/60 px-5 py-4">
         <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
           Comunicación del equipo

@@ -1,16 +1,14 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo } from "react";
+import summaryOccupied from "@/assets/mesero/img1.png";
+import summaryWaiting from "@/assets/mesero/img2.png";
+import summaryCooking from "@/assets/mesero/img3.png";
+import summaryPaying from "@/assets/mesero/img4.png";
+import summaryEating from "@/assets/mesero/img5.png";
 import { useTables } from "@/src/hooks/useTables";
 import type { AvailableWaiter, ServiceRequest } from "@/src/types";
-
-const TILE_TONE_CLASS = {
-  emerald: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
-  amber: "border-amber-500/30 bg-amber-500/10 text-amber-200",
-  rose: "border-rose-500/30 bg-rose-500/10 text-rose-200",
-  violet: "border-violet-500/30 bg-violet-500/10 text-violet-200",
-  sky: "border-sky-500/30 bg-sky-500/10 text-sky-200",
-};
 
 interface WaiterSummaryBarProps {
   waiters: AvailableWaiter[];
@@ -44,37 +42,12 @@ export default function WaiterSummaryBar({
   const eatingTables = tables.filter((table) => table.status === "eating").length;
 
   const summaryTiles = [
-    {
-      icon: "👥",
-      label: "Mesas ocupadas",
-      value: String(occupiedTables),
-      tone: "emerald" as const,
-    },
-    {
-      icon: "⏳",
-      label: "Esperando pedido",
-      value: String(waitingOrderTables),
-      tone: "amber" as const,
-    },
-    {
-      icon: "👨‍🍳",
-      label: "En cocina",
-      value: String(cookingTables),
-      tone: "sky" as const,
-    },
-    {
-      icon: "💳",
-      label: "Pagando",
-      value: String(payingTables),
-      tone: "violet" as const,
-    },
-    {
-      icon: "🍽️",
-      label: "Comiendo",
-      value: String(eatingTables),
-      tone: "rose" as const,
-    },
-  ];
+    { image: summaryOccupied, label: "Mesas ocupadas", count: occupiedTables },
+    { image: summaryWaiting, label: "Esperando pedido", count: waitingOrderTables },
+    { image: summaryCooking, label: "En cocina", count: cookingTables },
+    { image: summaryPaying, label: "Pagando", count: payingTables },
+    { image: summaryEating, label: "Comiendo", count: eatingTables },
+  ].sort((a, b) => b.count - a.count);
 
   const requestQueue = useMemo<ServiceRequest[]>(
     () =>
@@ -117,8 +90,8 @@ export default function WaiterSummaryBar({
     : [];
 
   return (
-    <div className="grid shrink-0 grid-cols-1 gap-2 border-t border-slate-800 bg-[#0b1120] px-3 py-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
-      <section>
+    <div className="grid shrink-0 grid-cols-1 gap-2 bg-[#0b1120]/95 px-3 py-1.5 backdrop-blur-sm lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+      <section className="flex h-full flex-col justify-center">
         <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
           Resumen en vivo
         </p>
@@ -126,19 +99,23 @@ export default function WaiterSummaryBar({
           {summaryTiles.map((tile) => (
             <div
               key={tile.label}
-              className={`rounded-lg border px-3 py-2 ${TILE_TONE_CLASS[tile.tone]}`}
+              className="relative aspect-[1627/1085] w-full overflow-hidden"
             >
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs">{tile.icon}</span>
-                <span className="text-lg font-semibold text-white">{tile.value}</span>
-              </div>
-              <p className="mt-0.5 text-[10px] leading-tight opacity-90">{tile.label}</p>
+              <Image
+                src={tile.image}
+                alt={tile.label}
+                fill
+                className="select-none object-contain"
+              />
+              <span className="absolute right-[14%] top-1/2 -translate-y-1/2 text-base font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] sm:text-lg">
+                {tile.count}
+              </span>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="rounded-lg border border-slate-700/60 bg-slate-900/40 px-3 py-2">
+      <section className="rounded-lg border border-slate-700/60 bg-slate-900/40 px-3 py-1.5">
         <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
           Cola de solicitudes
         </p>
@@ -160,12 +137,12 @@ export default function WaiterSummaryBar({
         )}
       </section>
 
-      <section className="rounded-lg border border-slate-700/60 bg-slate-900/40 px-3 py-2">
+      <section className="rounded-lg border border-slate-700/60 bg-slate-900/40 px-3 py-1.5">
         <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
           Mi Turno
         </p>
-        <div className="mt-3 flex flex-wrap items-start gap-3">
-          <div className="flex flex-wrap gap-2">
+        <div className="mt-1.5 flex flex-wrap items-start gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {waiters.map((waiter) => {
               return (
                 <button
@@ -173,7 +150,7 @@ export default function WaiterSummaryBar({
                   type="button"
                   disabled={!waiter.online}
                   onClick={() => onCurrentWaiterChange(waiter.id)}
-                  className={`flex flex-col items-center gap-1 rounded-lg border px-2.5 py-2 text-center transition-colors ${
+                  className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-left transition-colors ${
                     currentWaiterId === waiter.id
                       ? "border-violet-500/40 bg-violet-500/15"
                       : waiter.online
@@ -181,44 +158,43 @@ export default function WaiterSummaryBar({
                         : "cursor-not-allowed border-slate-800 bg-slate-900/20 opacity-50"
                   }`}
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-[11px] font-bold text-white">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-[10px] font-bold text-white">
                     {waiter.name.charAt(0)}
                   </span>
-                  <span className="flex items-center gap-1 text-[11px] text-slate-300">
-                    {waiter.name}
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${waiter.online ? "bg-emerald-400" : "bg-slate-600"}`}
-                    />
-                  </span>
-                  <span className="text-[10px] text-slate-500">
-                    {!waiter.online
-                      ? "Desconectado"
-                      : currentWaiterId === waiter.id
-                        ? "Eres tú"
-                        : "Disponible"}
+                  <span className="flex flex-col leading-tight">
+                    <span className="flex items-center gap-1 text-[11px] text-slate-300">
+                      {waiter.name}
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${waiter.online ? "bg-emerald-400" : "bg-slate-600"}`}
+                      />
+                    </span>
+                    <span className="text-[9px] text-slate-500">
+                      {!waiter.online
+                        ? "Desconectado"
+                        : currentWaiterId === waiter.id
+                          ? "Eres tú"
+                          : "Disponible"}
+                    </span>
                   </span>
                 </button>
               );
             })}
           </div>
 
-          <div className="min-w-[10rem] flex-1 rounded-lg border border-slate-700/60 bg-slate-950/40 px-3 py-2">
+          <div className="min-w-[10rem] flex-1 rounded-lg border border-slate-700/60 bg-slate-950/40 px-2.5 py-1.5">
             {currentWaiter ? (
               <>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-xs font-semibold text-white">
                   Mesero actual: {currentWaiter.name}
                 </p>
-                <p className="mt-0.5 text-xs text-slate-400">
+                <p className="mt-0.5 text-[11px] text-slate-400">
                   {currentWaiterTables.length > 0
-                    ? `Mesas tomadas: ${currentWaiterTables.join(", ")}`
-                    : "Aun no has tomado ninguna mesa."}
-                </p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Selecciona una mesa del mapa para empezar a atenderla.
+                    ? `Mesas: ${currentWaiterTables.join(", ")}`
+                    : "Selecciona una mesa del mapa para empezar."}
                 </p>
               </>
             ) : (
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] text-slate-500">
                 Selecciona qué mesero eres para empezar a operar.
               </p>
             )}
@@ -226,7 +202,7 @@ export default function WaiterSummaryBar({
         </div>
 
         {error ? (
-          <p className="mt-2 rounded-xl border border-rose-500/30 bg-rose-950/30 px-3 py-2 text-xs text-rose-200">
+          <p className="mt-1.5 rounded-xl border border-rose-500/30 bg-rose-950/30 px-3 py-1.5 text-xs text-rose-200">
             {error}
           </p>
         ) : null}

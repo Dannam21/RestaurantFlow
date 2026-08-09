@@ -71,6 +71,8 @@ class OrderDishResponse(BaseModel):
     notes: str | None
     price: float | None
     status: str
+    estimated_time: int
+    progress: int
     delivered_at: datetime | None
     created_at: datetime
     updated_at: datetime
@@ -163,27 +165,6 @@ class CustomerRegisterRequest(BaseModel):
         return normalized
 
 
-class CustomerVerifyRequest(BaseModel):
-    email: str = Field(min_length=5, max_length=320)
-    code: str = Field(min_length=6, max_length=6)
-
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, value: str) -> str:
-        normalized = value.strip().lower()
-        if not EMAIL_PATTERN.match(normalized):
-            raise ValueError("Invalid email format")
-        return normalized
-
-    @field_validator("code")
-    @classmethod
-    def validate_code(cls, value: str) -> str:
-        normalized = value.strip()
-        if not normalized.isdigit():
-            raise ValueError("Verification code must contain only digits")
-        return normalized
-
-
 class CustomerLoginRequest(BaseModel):
     email: str = Field(min_length=5, max_length=320)
     password: str = Field(min_length=8, max_length=128)
@@ -215,13 +196,6 @@ class CustomerResponse(BaseModel):
     verified_at: datetime | None
     created_at: datetime
     updated_at: datetime
-
-
-class CustomerRegisterResponse(BaseModel):
-    message: str
-    customer_id: UUID
-    email: str
-    expires_in_minutes: int
 
 
 class ReservationTrackingResponse(BaseModel):

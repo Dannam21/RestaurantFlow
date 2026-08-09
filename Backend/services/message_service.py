@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Message
-from schemas.models import MessageCreate, MessageSender
+from schemas.models import MessageCreate, MessageRecipient, MessageSender, MessageType
 from services import portal_service
 
 
@@ -85,6 +85,8 @@ async def get_messages(
     order_id: UUID | None = None,
     sender: MessageSender | None = None,
     sender_id: str | None = None,
+    recipient_role: MessageRecipient | None = None,
+    message_type: MessageType | None = None,
     limit: int = 50,
 ) -> list[Message]:
     statement = select(Message)
@@ -96,6 +98,10 @@ async def get_messages(
         statement = statement.where(Message.sender == sender)
     if sender_id is not None:
         statement = statement.where(Message.sender_id == sender_id)
+    if recipient_role is not None:
+        statement = statement.where(Message.recipient_role == recipient_role)
+    if message_type is not None:
+        statement = statement.where(Message.message_type == message_type)
 
     statement = statement.order_by(Message.created_at.desc()).limit(limit)
     result = await session.scalars(statement)

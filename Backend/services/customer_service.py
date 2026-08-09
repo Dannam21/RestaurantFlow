@@ -1,20 +1,13 @@
 import logging
 import secrets
 import hashlib
-from datetime import timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import settings
 from db.models import Customer
 from db.models import utc_now
-from schemas.models import (
-    CustomerLoginRequest,
-    CustomerRegisterRequest,
-    CustomerVerifyRequest,
-)
-from services.email_service import EmailDeliveryError, send_customer_verification_code
+from schemas.models import CustomerLoginRequest, CustomerRegisterRequest
 
 
 logger = logging.getLogger(__name__)
@@ -24,16 +17,8 @@ class CustomerConflictError(ValueError):
     pass
 
 
-class CustomerVerificationError(ValueError):
-    pass
-
-
 class CustomerAuthenticationError(ValueError):
     pass
-
-
-def _generate_verification_code() -> str:
-    return f"{secrets.randbelow(1_000_000):06d}"
 
 
 def _hash_password(password: str) -> str:
@@ -60,70 +45,33 @@ async def register_customer(
     session: AsyncSession, data: CustomerRegisterRequest
 ) -> Customer:
     result = await session.scalar(select(Customer).where(Customer.email == data.email))
-    code = _generate_verification_code()
-    expires_at = utc_now() + timedelta(
-        minutes=settings.customer_verification_code_ttl_minutes
-    )
 
     if result is not None and result.is_verified:
-        raise CustomerConflictError("Email is already registered and verified")
+        raise CustomerConflictError("Email is already registered")
 
     if result is None:
         customer = Customer(
             full_name=data.full_name,
             email=data.email,
             password_hash=_hash_password(data.password),
-            is_verified=False,
-            verification_code=code,
-            verification_code_expires_at=expires_at,
-            verified_at=None,
+            is_verified=True,
+            verification_code=None,
+            verification_code_expires_at=None,
+            verified_at=utc_now(),
         )
         session.add(customer)
     else:
         customer = result
         customer.full_name = data.full_name
         customer.password_hash = _hash_password(data.password)
-        customer.verification_code = code
-        customer.verification_code_expires_at = expires_at
-        customer.verified_at = None
-
-    await session.flush()
-
-    try:
-        await send_customer_verification_code(customer.email, code)
-    except EmailDeliveryError:
-        await session.rollback()
-        raise
+        customer.is_verified = True
+        customer.verification_code = None
+        customer.verification_code_expires_at = None
+        customer.verified_at = utc_now()
 
     await session.commit()
     await session.refresh(customer)
-    logger.info("Customer verification code sent customer_id=%s", customer.id)
-    return customer
-
-
-async def verify_customer(
-    session: AsyncSession, data: CustomerVerifyRequest
-) -> Customer:
-    customer = await session.scalar(select(Customer).where(Customer.email == data.email))
-    if customer is None:
-        raise CustomerVerificationError("Customer registration not found")
-    if customer.is_verified:
-        return customer
-    if customer.verification_code != data.code:
-        raise CustomerVerificationError("Invalid verification code")
-    if customer.verification_code_expires_at is None:
-        raise CustomerVerificationError("Verification code is not available")
-    if customer.verification_code_expires_at < utc_now():
-        raise CustomerVerificationError("Verification code has expired")
-
-    customer.is_verified = True
-    customer.verification_code = None
-    customer.verification_code_expires_at = None
-    customer.verified_at = utc_now()
-
-    await session.commit()
-    await session.refresh(customer)
-    logger.info("Customer verified customer_id=%s", customer.id)
+    logger.info("Customer registered customer_id=%s", customer.id)
     return customer
 
 

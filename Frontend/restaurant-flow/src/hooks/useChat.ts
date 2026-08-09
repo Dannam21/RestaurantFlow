@@ -22,7 +22,7 @@ function getCustomerId(): string {
   return id;
 }
 
-function resolveChatParticipantId(currentUser?: {
+export function resolveChatParticipantId(currentUser?: {
   id?: string;
   email?: string;
 }): string {

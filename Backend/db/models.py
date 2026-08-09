@@ -55,6 +55,9 @@ class OrderDish(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     price: Mapped[float | None] = mapped_column(nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
+    estimated_time: Mapped[int] = mapped_column(
+        Integer, default=15, server_default="15", nullable=False
+    )
     delivered_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -64,6 +67,19 @@ class OrderDish(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
     )
+
+    @property
+    def progress(self) -> int:
+        """Derived cooking progress for this dish, computed from wall-clock
+        elapsed time against its own estimate rather than the parent order's,
+        so a quick drink and a complex dish progress independently."""
+        if self.status in {"ready", "delivered"}:
+            return 100
+        if self.estimated_time <= 0:
+            return 100
+        elapsed_minutes = max(0.0, (utc_now() - self.created_at).total_seconds() / 60)
+        computed = round((elapsed_minutes / self.estimated_time) * 100)
+        return max(0, min(100, computed))
 
 
 class Table(Base):

@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import KitchenOrdersPanel from "@/src/components/KitchenOrdersPanel";
+import PaymentNotification from "@/src/components/PaymentNotification";
+import WaiterKitchenOrdersPanel from "@/src/components/WaiterKitchenOrdersPanel";
 import WaiterMap from "@/src/components/WaiterMap";
 import WaiterOrderModal from "@/src/components/WaiterOrderModal";
 import WaiterPanel from "@/src/components/WaiterPanel";
 import WaiterSummaryBar from "@/src/components/WaiterSummaryBar";
 import {
+  usePaymentNotifications,
+  type PaymentRequestItem,
+} from "@/src/hooks/usePaymentNotifications";
+import {
   ApiError,
+  applyWaiterTableAction,
   assignServiceSessionWaiter,
   getServiceSessions,
   getStaff,
@@ -22,6 +28,12 @@ export default function WaiterView() {
   const [currentWaiterId, setCurrentWaiterId] = useState<string | null>(null);
   const [orderingTableId, setOrderingTableId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(
+    null
+  );
+
+  const { requests: paymentRequests, dismissRequest: dismissPaymentRequest } =
+    usePaymentNotifications();
 
   useEffect(() => {
     let cancelled = false;
@@ -111,33 +123,86 @@ export default function WaiterView() {
     }
   }
 
+  async function handlePaymentAcknowledge(request: PaymentRequestItem) {
+    if (request.tableId === null) {
+      dismissPaymentRequest(request.id);
+      return;
+    }
+    if (!currentWaiterId) {
+      setError("Selecciona primero qué mesero eres para poder llevar la cuenta.");
+      return;
+    }
+
+    setProcessingRequestId(request.id);
+    try {
+      await applyWaiterTableAction(request.tableId, currentWaiterId, "paying");
+      dismissPaymentRequest(request.id);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo actualizar el estado de la mesa."
+      );
+    } finally {
+      setProcessingRequestId(null);
+    }
+  }
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        <div className="h-72 w-full shrink-0 md:h-full md:w-1/4 md:min-w-[280px]">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      {/* Full-screen map, base layer */}
+      <div className="absolute inset-0">
+        <WaiterMap
+          waiters={waiters}
+          assignments={assignments}
+          currentWaiterId={currentWaiterId}
+          onTakeOrder={(tableId) => setOrderingTableId(tableId)}
+          onAssign={handleAssign}
+        />
+      </div>
+
+      {/* Floating HUD layer */}
+      <div className="pointer-events-none absolute inset-3 z-20 flex flex-col gap-3 lg:flex-row">
+        <div className="pointer-events-auto hidden w-80 max-w-[90vw] shrink-0 overflow-hidden rounded-2xl border border-slate-700/60 shadow-2xl shadow-black/40 lg:flex lg:flex-col">
           <WaiterPanel />
         </div>
-        <div className="h-full min-h-0 md:w-1/2 md:flex-1">
-          <WaiterMap
-            waiters={waiters}
-            assignments={assignments}
-            currentWaiterId={currentWaiterId}
-            onTakeOrder={(tableId) => setOrderingTableId(tableId)}
-            onAssign={handleAssign}
-          />
-        </div>
-        <div className="h-72 w-full shrink-0 md:h-full md:w-1/4 md:min-w-[280px]">
-          <KitchenOrdersPanel />
+
+        <div className="flex flex-1 flex-col justify-between gap-3">
+          <div className="hidden justify-end lg:flex">
+            <div
+              className="pointer-events-auto w-72 shrink-0 sm:w-80"
+              style={{ height: "min(65vh, 620px)" }}
+            >
+              <WaiterKitchenOrdersPanel />
+            </div>
+          </div>
+
+          <div className="pointer-events-auto overflow-hidden rounded-2xl border border-slate-700/60 shadow-2xl shadow-black/40">
+            <WaiterSummaryBar
+              waiters={waiters}
+              assignments={assignments}
+              currentWaiterId={currentWaiterId}
+              onCurrentWaiterChange={setCurrentWaiterId}
+              error={error}
+            />
+          </div>
         </div>
       </div>
 
-      <WaiterSummaryBar
-        waiters={waiters}
-        assignments={assignments}
-        currentWaiterId={currentWaiterId}
-        onCurrentWaiterChange={setCurrentWaiterId}
-        error={error}
-      />
+      {paymentRequests.length > 0 && (
+        <div className="pointer-events-none fixed top-4 right-4 z-[9999] flex flex-col items-end gap-2">
+          {paymentRequests.map((request) => (
+            <PaymentNotification
+              key={request.id}
+              request={request}
+              onAcknowledge={handlePaymentAcknowledge}
+              onDismiss={dismissPaymentRequest}
+              isProcessing={processingRequestId === request.id}
+            />
+          ))}
+        </div>
+      )}
 
       {orderingTableId !== null ? (
         <WaiterOrderModal

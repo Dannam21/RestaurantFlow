@@ -6,6 +6,7 @@ import restaurantBg from "@/assets/fondorestaurante.png";
 import queueRope from "@/assets/fila.png";
 import chef from "@/assets/cocina/chef.png";
 import cocinaMesa from "@/assets/cocina/mesa.png";
+import AnimatedLantern from "@/src/components/AnimatedLantern";
 import Table from "@/src/components/Table";
 import WaitingList from "@/src/components/WaitingList";
 import MenuButton from "@/src/components/MenuButton";
@@ -204,6 +205,8 @@ export default function RestaurantMap({
           className="pointer-events-none absolute z-10 h-auto w-[18%] select-none object-contain"
           style={{ top: "65%", left: "25%" }}
         />
+
+        <AnimatedLantern x="15%" y="95.9%" />
 
         <WaitingList
           isAuthenticated={isAuthenticated}
