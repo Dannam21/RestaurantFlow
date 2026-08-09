@@ -38,6 +38,34 @@ class Order(Base):
     )
 
 
+class OrderDish(Base):
+    __tablename__ = "order_dishes"
+    __table_args__ = (
+        Index("ix_order_dishes_order_id", "order_id"),
+        Index("ix_order_dishes_table_id", "table_id"),
+        Index("ix_order_dishes_status", "status"),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    order_id: Mapped[UUID] = mapped_column(ForeignKey("orders.id"), nullable=False)
+    table_id: Mapped[int] = mapped_column(ForeignKey("tables.id"), nullable=False)
+    product_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    name: Mapped[str] = mapped_column(String(150), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    price: Mapped[float | None] = mapped_column(nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
+    delivered_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+
 class Table(Base):
     __tablename__ = "tables"
 

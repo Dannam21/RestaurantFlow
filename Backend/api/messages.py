@@ -5,17 +5,34 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import AsyncSessionLocal, get_db
 from schemas.models import MessageCreate, MessageResponse, MessageSender
-from services import ai_service, message_service
+from services import ai_service, message_service, waitlist_service
 
 
 router = APIRouter(prefix="/api/messages", tags=["messages"])
+
+RESERVATION_KEYWORDS = ("reserv", "separar", "mesa disponible", "hay mesa", "hay mesas")
+
+
+def _mentions_reservation(text: str) -> bool:
+    normalized = text.lower()
+    return any(keyword in normalized for keyword in RESERVATION_KEYWORDS)
 
 
 async def _create_bot_reply(
     client_text: str, table_id: int | None, sender_id: str | None
 ) -> None:
+    order_context: dict[str, object] = {"table_id": table_id}
+
+    if _mentions_reservation(client_text):
+        async with AsyncSessionLocal() as availability_session:
+            order_context["disponibilidad"] = (
+                await waitlist_service.describe_availability_for_chat(
+                    availability_session
+                )
+            )
+
     reply_text = await ai_service.get_bot_response(
-        client_text, order_context={"table_id": table_id}
+        client_text, order_context=order_context
     )
 
     async with AsyncSessionLocal() as session:

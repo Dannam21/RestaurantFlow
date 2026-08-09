@@ -8,6 +8,9 @@ import chef from "@/assets/cocina/chef.png";
 import cocinaMesa from "@/assets/cocina/mesa.png";
 import Table from "@/src/components/Table";
 import WaitingList from "@/src/components/WaitingList";
+import MenuButton from "@/src/components/MenuButton";
+import MenuModal from "@/src/components/MenuModal";
+import MyOrderModal from "@/src/components/MyOrderModal";
 import PartySizeModal from "@/src/components/PartySizeModal";
 import { useContainSize } from "@/src/hooks/useContainSize";
 import { useTables } from "@/src/hooks/useTables";
@@ -36,6 +39,8 @@ export default function RestaurantMap({
   const [reserveError, setReserveError] = useState<string | null>(null);
 
   const [showQueueModal, setShowQueueModal] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showMyOrder, setShowMyOrder] = useState(false);
   const [seatedMessage, setSeatedMessage] = useState<string | null>(null);
 
   const myActiveTable = currentUser?.id
@@ -118,6 +123,8 @@ export default function RestaurantMap({
       ref={containerRef}
       className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#0f172a]"
     >
+      <MenuButton onClick={() => setShowMenu(true)} />
+
       <div
         className="relative"
         style={{
@@ -137,6 +144,8 @@ export default function RestaurantMap({
           const position = TABLE_POSITIONS[table.id];
           if (!position) return null;
 
+          const isMine = table.id === myActiveTable?.id;
+
           return (
             <Table
               key={table.id}
@@ -151,11 +160,19 @@ export default function RestaurantMap({
               hoverHint={
                 table.status === "empty"
                   ? "Si quieres reservar, dale click."
-                  : undefined
+                  : isMine
+                    ? "Toca para ver el estado de tu pedido."
+                    : undefined
               }
+              ownerBadge={isMine ? "Tu mesa" : undefined}
               onClick={() => {
-                if (table.status !== "empty") return;
-                handleReserveClick(table.id);
+                if (table.status === "empty") {
+                  handleReserveClick(table.id);
+                  return;
+                }
+                if (isMine) {
+                  setShowMyOrder(true);
+                }
               }}
             />
           );
@@ -234,6 +251,16 @@ export default function RestaurantMap({
           requireName={!currentUser}
           onConfirm={handleConfirmJoinQueue}
           onClose={() => setShowQueueModal(false)}
+        />
+      )}
+
+      {showMenu && <MenuModal onClose={() => setShowMenu(false)} />}
+
+      {showMyOrder && myActiveTable && (
+        <MyOrderModal
+          tableId={myActiveTable.id}
+          orderId={myActiveTable.order_id}
+          onClose={() => setShowMyOrder(false)}
         />
       )}
     </div>

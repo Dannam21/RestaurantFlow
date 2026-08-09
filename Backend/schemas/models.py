@@ -10,6 +10,7 @@ EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 OrderStatus = Literal["pending", "analyzing", "cooking", "ready", "served", "paid"]
+OrderDishStatus = Literal["pending", "preparing", "ready", "delivered"]
 TableStatus = Literal["empty", "waiting_order", "cooking", "eating", "paying"]
 WaitlistStatus = Literal["waiting", "notified", "seated", "cancelled"]
 MessageSender = Literal["client", "waiter", "chef", "admin", "system", "bot"]
@@ -56,6 +57,27 @@ class OrderResponse(BaseModel):
     estimated_time: int | None
     created_at: datetime
     updated_at: datetime
+
+
+class OrderDishResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    order_id: UUID
+    table_id: int
+    product_id: str | None
+    name: str
+    quantity: int
+    notes: str | None
+    price: float | None
+    status: str
+    delivered_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class OrderDishStatusUpdate(BaseModel):
+    status: OrderDishStatus
 
 
 class TableUpdate(BaseModel):

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import KitchenOrdersPanel from "@/src/components/KitchenOrdersPanel";
 import WaiterMap from "@/src/components/WaiterMap";
 import WaiterOrderModal from "@/src/components/WaiterOrderModal";
 import WaiterPanel from "@/src/components/WaiterPanel";
@@ -113,10 +114,10 @@ export default function WaiterView() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        <div className="h-72 w-full shrink-0 md:h-full md:w-1/4 md:min-w-[320px]">
+        <div className="h-72 w-full shrink-0 md:h-full md:w-1/4 md:min-w-[280px]">
           <WaiterPanel />
         </div>
-        <div className="h-full min-h-0 flex-1">
+        <div className="h-full min-h-0 md:w-1/2 md:flex-1">
           <WaiterMap
             waiters={waiters}
             assignments={assignments}
@@ -124,6 +125,9 @@ export default function WaiterView() {
             onTakeOrder={(tableId) => setOrderingTableId(tableId)}
             onAssign={handleAssign}
           />
+        </div>
+        <div className="h-72 w-full shrink-0 md:h-full md:w-1/4 md:min-w-[280px]">
+          <KitchenOrdersPanel />
         </div>
       </div>
 

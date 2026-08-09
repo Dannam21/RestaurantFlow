@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 ACTIVE_STATUSES = {"pending", "analyzing", "cooking", "ready"}
 
 
+FINISHED_STATUSES = {"ready", "served", "paid"}
+
+
 def calculate_remaining_time(order: Order, now: datetime) -> int | None:
     duration = order.estimated_duration or order.estimated_time
     if duration is None:
@@ -26,6 +29,22 @@ def calculate_remaining_time(order: Order, now: datetime) -> int | None:
     progress_elapsed = duration * min(100, max(0, order.progress)) / 100
     effective_elapsed = max(elapsed_minutes, progress_elapsed)
     return max(0, math.ceil(duration - effective_elapsed))
+
+
+def calculate_progress(order: Order, now: datetime) -> int | None:
+    """Simulate real cooking progress from elapsed wall-clock time, so the
+    kitchen UI shows a genuinely moving percentage instead of a frozen 0%."""
+    if order.status in FINISHED_STATUSES:
+        return 100
+
+    duration = order.estimated_duration or order.estimated_time
+    if duration is None or duration <= 0:
+        return None
+
+    elapsed_minutes = max(0.0, (now - order.created_at).total_seconds() / 60)
+    computed = round((elapsed_minutes / duration) * 100)
+    # Progress must never move backwards, matching order_service's own rule.
+    return max(order.progress, min(100, computed))
 
 
 async def run_predictor(session: AsyncSession) -> int:
@@ -49,21 +68,39 @@ async def run_predictor(session: AsyncSession) -> int:
 
     now = datetime.now(timezone.utc)
     updated: list[Order] = []
+    newly_ready: list[Order] = []
     changes: list[dict[str, object]] = []
     for order in active_orders:
         try:
             remaining = calculate_remaining_time(order, now)
-            if remaining is None or remaining == order.estimated_time:
+            new_progress = calculate_progress(order, now)
+
+            time_changed = remaining is not None and remaining != order.estimated_time
+            progress_changed = (
+                new_progress is not None and new_progress != order.progress
+            )
+            if not time_changed and not progress_changed:
                 continue
 
             previous_eta = order.estimated_time
-            order.estimated_time = remaining
+            previous_progress = order.progress
+            if time_changed:
+                order.estimated_time = remaining
+            if progress_changed:
+                order.progress = new_progress
+                if new_progress == 100 and order.status not in FINISHED_STATUSES:
+                    order.status = "ready"
+                    order.estimated_time = 0
+                    newly_ready.append(order)
+
             updated.append(order)
             changes.append(
                 {
                     "order_id": str(order.id),
                     "previous_eta": previous_eta,
-                    "estimated_time": remaining,
+                    "estimated_time": order.estimated_time,
+                    "previous_progress": previous_progress,
+                    "progress": order.progress,
                 }
             )
         except Exception:
@@ -98,6 +135,19 @@ async def run_predictor(session: AsyncSession) -> int:
                 },
             )
             logger.info("Predictor updated order_id=%s", order.id)
+
+        for order in newly_ready:
+            ready_payload = {
+                "order_id": str(order.id),
+                "table_id": order.table_id,
+                "status": order.status,
+                "progress": order.progress,
+                "updated_at": order.updated_at.isoformat(),
+            }
+            await portal_service.publish_order_event("order.ready", ready_payload)
+            await portal_service.publish_dish_ready_notification(
+                str(order.id), order.table_id
+            )
 
     await portal_service.publish_agent_event(
         "agent.completed",

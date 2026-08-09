@@ -21,6 +21,7 @@ export interface TableProps {
   assignedWaiterName?: string;
   isMine?: boolean;
   hoverHint?: string;
+  ownerBadge?: string;
 }
 
 const ALERT_TONE_CLASS: Record<TableAlert["tone"], string> = {
@@ -63,6 +64,7 @@ export default function Table({
   assignedWaiterName,
   isMine,
   hoverHint,
+  ownerBadge,
 }: TableProps) {
   const isVacant = status === "vacio";
   const tableSprite =
@@ -75,8 +77,8 @@ export default function Table({
         : numPersonas === 2
           ? mesa22
           : mesa1;
-  const imageWidth = `${9.4 * scale}rem`;
-  const imageHeight = `${6.3 * scale}rem`;
+  const imageWidth = `${7.8 * scale}rem`;
+  const imageHeight = `${5.2 * scale}rem`;
 
   return (
     <div
@@ -122,7 +124,11 @@ export default function Table({
         </div>
       )}
 
-      <div className="relative overflow-hidden rounded-xl">
+      <div
+        className={`relative overflow-hidden rounded-xl ${
+          ownerBadge ? "ring-2 ring-sky-400/80 ring-offset-2 ring-offset-transparent" : ""
+        }`}
+      >
         <Image
           src={tableSprite}
           alt={`Mesa ${id} — ${STATUS_LABEL[status]}`}
@@ -134,6 +140,12 @@ export default function Table({
           style={{ width: imageWidth, height: imageHeight }}
         />
       </div>
+
+      {ownerBadge && (
+        <div className="pointer-events-none absolute -top-2 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full border border-sky-400/60 bg-sky-950/90 px-2.5 py-0.5 text-[10px] font-semibold text-sky-200 shadow-lg">
+          📍 {ownerBadge}
+        </div>
+      )}
 
       {assignedWaiterName && isMine ? (
         <div className="pointer-events-none absolute -bottom-2 left-1/2 z-30 flex -translate-x-1/2 flex-col items-center whitespace-nowrap rounded-lg border border-emerald-500/50 bg-emerald-950/90 px-2.5 py-1 text-center shadow-lg">

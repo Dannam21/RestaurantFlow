@@ -220,11 +220,21 @@ export interface OrderCreateRequest {
   items: OrderItemRequest[];
 }
 
+export type OrderStatus =
+  | "pending"
+  | "analyzing"
+  | "cooking"
+  | "ready"
+  | "served"
+  | "paid";
+
 export interface OrderResponse {
   id: string;
   table_id: number;
   status: string;
   items: OrderItemRequest[];
+  progress: number;
+  estimated_time: number | null;
   created_at: string;
   updated_at: string;
   [key: string]: unknown;
@@ -238,11 +248,45 @@ export function getOrder(orderId: string) {
   return getJson<OrderResponse>(`/api/orders/${orderId}`);
 }
 
-export function updateOrderStatus(
-  orderId: string,
-  status: "pending" | "analyzing" | "cooking" | "ready" | "served" | "paid"
-) {
+export function getOrders(params: { status?: OrderStatus; limit?: number } = {}) {
+  return getJson<OrderResponse[]>(
+    "/api/orders",
+    params as Record<string, string | number | undefined>
+  );
+}
+
+export function updateOrderStatus(orderId: string, status: OrderStatus) {
   return putJson<OrderResponse>(`/api/orders/${orderId}/status`, { status });
+}
+
+export type OrderDishStatus = "pending" | "preparing" | "ready" | "delivered";
+
+export interface OrderDishResponse {
+  id: string;
+  order_id: string;
+  table_id: number;
+  product_id: string | null;
+  name: string;
+  quantity: number;
+  notes: string | null;
+  price: number | null;
+  status: OrderDishStatus;
+  delivered_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function getOrderDishes(
+  params: { order_id?: string; table_id?: number; status?: OrderDishStatus } = {}
+) {
+  return getJson<OrderDishResponse[]>(
+    "/api/order-dishes",
+    params as Record<string, string | number | undefined>
+  );
+}
+
+export function updateOrderDishStatus(dishId: string, status: OrderDishStatus) {
+  return putJson<OrderDishResponse>(`/api/order-dishes/${dishId}/status`, { status });
 }
 
 export interface MenuItemResponse {
@@ -432,4 +476,45 @@ export function listWaitlistEntries(
     "/api/waitlist",
     params as Record<string, string | number | undefined>
   );
+}
+
+export interface StatsResponse {
+  total_orders: number;
+  active_orders: number;
+  completed_orders: number;
+  average_order_time_minutes: number;
+  average_estimated_time_minutes: number;
+  tables_total: number;
+  tables_occupied: number;
+  tables_available: number;
+  messages_today: number;
+  alerts_today: number;
+  revenue_today: number | null;
+  satisfaction: number | null;
+}
+
+export interface AgentActivityResponse {
+  id: string;
+  agent_name: string;
+  action: string;
+  output_data: Record<string, unknown> | unknown[] | null;
+  created_at: string;
+}
+
+export interface DashboardResponse {
+  stats: StatsResponse;
+  orders: OrderResponse[];
+  tables: TableResponse[];
+  waitlist: WaitlistEntryResponse[];
+  alerts: AgentActivityResponse[];
+  agent_activity: AgentActivityResponse[];
+  recent_requests: MessageResponse[];
+}
+
+export function getStats() {
+  return getJson<StatsResponse>("/api/stats");
+}
+
+export function getDashboard() {
+  return getJson<DashboardResponse>("/api/dashboard");
 }

@@ -15,6 +15,7 @@ import {
   getStaff,
   listWaitlistEntries,
   type OrderResponse,
+  type WaitlistEntryResponse,
 } from "@/src/lib/api";
 import {
   TABLE_POSITIONS,
@@ -27,12 +28,20 @@ function shortId(id: string) {
   return id.slice(0, 8);
 }
 
+const LEGEND: { tone: string; label: string }[] = [
+  { tone: "bg-amber-400", label: "Esperando pedido" },
+  { tone: "bg-sky-400", label: "Pedido en cocina" },
+  { tone: "bg-emerald-400", label: "Comiendo" },
+  { tone: "bg-rose-400", label: "Pagando" },
+  { tone: "bg-slate-500", label: "Vacío" },
+];
+
 export default function AdminMap() {
   const { tables, error } = useTables();
   const { containerRef, size } = useContainSize(3 / 2);
 
   const [waiterNames, setWaiterNames] = useState<Record<number, string>>({});
-  const [waitlistCount, setWaitlistCount] = useState(0);
+  const [waitlistEntries, setWaitlistEntries] = useState<WaitlistEntryResponse[]>([]);
   const [now, setNow] = useState<Date | null>(null);
   const [openTableId, setOpenTableId] = useState<number | null>(null);
   const [openTableOrder, setOpenTableOrder] = useState<OrderResponse | null>(null);
@@ -62,20 +71,20 @@ export default function AdminMap() {
       }
     }
 
-    async function loadWaitlistCount() {
+    async function loadWaitlist() {
       try {
         const entries = await listWaitlistEntries({ active_only: true });
-        if (!cancelled) setWaitlistCount(entries.length);
+        if (!cancelled) setWaitlistEntries(entries);
       } catch {
         // best-effort
       }
     }
 
     loadStaffState();
-    loadWaitlistCount();
+    loadWaitlist();
     const intervalId = window.setInterval(() => {
       loadStaffState();
-      loadWaitlistCount();
+      loadWaitlist();
     }, 4000);
     return () => {
       cancelled = true;
@@ -131,9 +140,23 @@ export default function AdminMap() {
       ref={containerRef}
       className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#0f172a]"
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-28 bg-gradient-to-b from-slate-950 via-slate-950/70 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-32 bg-gradient-to-b from-slate-950 via-slate-950/70 to-transparent" />
 
-      <div className="absolute left-4 top-4 z-30 flex max-w-[calc(100%-2rem)] flex-wrap items-center gap-2">
+      <div className="absolute left-4 right-4 top-3 z-30">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">
+          Mapa del restaurante en vivo
+        </p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+          {LEGEND.map((entry) => (
+            <span key={entry.label} className="flex items-center gap-1.5 text-[11px] text-slate-400">
+              <span className={`h-2 w-2 rounded-full ${entry.tone}`} />
+              {entry.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="absolute left-4 top-14 z-30 flex max-w-[calc(100%-2rem)] flex-wrap items-center gap-2">
         <div className="rounded-full border border-slate-700/80 bg-slate-950/85 px-3 py-1.5 text-xs text-slate-200 shadow-lg backdrop-blur-sm">
           {occupiedTables}/{tables.length || 10} mesas activas
         </div>
@@ -254,6 +277,13 @@ export default function AdminMap() {
           style={{ top: "5%", left: "40%" }}
         />
 
+        <div
+          className="pointer-events-none absolute z-20 rounded-md border border-amber-700/50 bg-slate-950/85 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-300 shadow-lg"
+          style={{ top: "1%", left: "48%" }}
+        >
+          Cocina
+        </div>
+
         <Image
           src={queueRope}
           alt="Fila de espera"
@@ -278,10 +308,21 @@ export default function AdminMap() {
             </span>
           </div>
           <p className="mt-1.5 text-xs font-medium text-white">
-            {waitlistCount === 0
+            {waitlistEntries.length === 0
               ? "Nadie está esperando todavía."
-              : `${waitlistCount} ${waitlistCount === 1 ? "persona esperando" : "personas esperando"}`}
+              : `${waitlistEntries.length} ${waitlistEntries.length === 1 ? "persona esperando" : "personas esperando"}`}
           </p>
+          {waitlistEntries.length > 0 && (
+            <p className="mt-0.5 text-[11px] text-amber-200/80">
+              ~{Math.round(
+                waitlistEntries.reduce(
+                  (sum, entry) => sum + (entry.quoted_wait_minutes ?? 0),
+                  0
+                ) / waitlistEntries.length
+              )}{" "}
+              min de espera
+            </p>
+          )}
         </div>
       </div>
     </div>

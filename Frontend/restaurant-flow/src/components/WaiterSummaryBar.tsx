@@ -164,63 +164,65 @@ export default function WaiterSummaryBar({
         <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
           Mi Turno
         </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {waiters.map((waiter) => {
-            return (
-              <button
-                key={waiter.id}
-                type="button"
-                disabled={!waiter.online}
-                onClick={() => onCurrentWaiterChange(waiter.id)}
-                className={`flex flex-col items-center gap-1 rounded-lg border px-2.5 py-2 text-center transition-colors ${
-                  currentWaiterId === waiter.id
-                    ? "border-violet-500/40 bg-violet-500/15"
-                    : waiter.online
-                      ? "border-slate-700/60 bg-slate-900/40 hover:border-slate-500"
-                      : "cursor-not-allowed border-slate-800 bg-slate-900/20 opacity-50"
-                }`}
-              >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-[11px] font-bold text-white">
-                  {waiter.name.charAt(0)}
-                </span>
-                <span className="flex items-center gap-1 text-[11px] text-slate-300">
-                  {waiter.name}
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${waiter.online ? "bg-emerald-400" : "bg-slate-600"}`}
-                  />
-                </span>
-                <span className="text-[10px] text-slate-500">
-                  {!waiter.online
-                    ? "Desconectado"
-                    : currentWaiterId === waiter.id
-                      ? "Eres tú"
-                      : "Disponible"}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <div className="mt-3 flex flex-wrap items-start gap-3">
+          <div className="flex flex-wrap gap-2">
+            {waiters.map((waiter) => {
+              return (
+                <button
+                  key={waiter.id}
+                  type="button"
+                  disabled={!waiter.online}
+                  onClick={() => onCurrentWaiterChange(waiter.id)}
+                  className={`flex flex-col items-center gap-1 rounded-lg border px-2.5 py-2 text-center transition-colors ${
+                    currentWaiterId === waiter.id
+                      ? "border-violet-500/40 bg-violet-500/15"
+                      : waiter.online
+                        ? "border-slate-700/60 bg-slate-900/40 hover:border-slate-500"
+                        : "cursor-not-allowed border-slate-800 bg-slate-900/20 opacity-50"
+                  }`}
+                >
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-[11px] font-bold text-white">
+                    {waiter.name.charAt(0)}
+                  </span>
+                  <span className="flex items-center gap-1 text-[11px] text-slate-300">
+                    {waiter.name}
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${waiter.online ? "bg-emerald-400" : "bg-slate-600"}`}
+                    />
+                  </span>
+                  <span className="text-[10px] text-slate-500">
+                    {!waiter.online
+                      ? "Desconectado"
+                      : currentWaiterId === waiter.id
+                        ? "Eres tú"
+                        : "Disponible"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-        <div className="mt-3 rounded-lg border border-slate-700/60 bg-slate-950/40 px-3 py-2">
-          {currentWaiter ? (
-            <>
-              <p className="text-sm font-semibold text-white">
-                Mesero actual: {currentWaiter.name}
+          <div className="min-w-[10rem] flex-1 rounded-lg border border-slate-700/60 bg-slate-950/40 px-3 py-2">
+            {currentWaiter ? (
+              <>
+                <p className="text-sm font-semibold text-white">
+                  Mesero actual: {currentWaiter.name}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  {currentWaiterTables.length > 0
+                    ? `Mesas tomadas: ${currentWaiterTables.join(", ")}`
+                    : "Aun no has tomado ninguna mesa."}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Selecciona una mesa del mapa para empezar a atenderla.
+                </p>
+              </>
+            ) : (
+              <p className="text-xs text-slate-500">
+                Selecciona qué mesero eres para empezar a operar.
               </p>
-              <p className="mt-0.5 text-xs text-slate-400">
-                {currentWaiterTables.length > 0
-                  ? `Mesas tomadas: ${currentWaiterTables.join(", ")}`
-                  : "Aun no has tomado ninguna mesa."}
-              </p>
-              <p className="mt-0.5 text-xs text-slate-500">
-                Selecciona una mesa del mapa para empezar a atenderla.
-              </p>
-            </>
-          ) : (
-            <p className="text-xs text-slate-500">
-              Selecciona qué mesero eres para empezar a operar.
-            </p>
-          )}
+            )}
+          </div>
         </div>
 
         {error ? (

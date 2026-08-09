@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import AdminMap from "@/src/components/AdminMap";
-import AdminPanel from "@/src/components/AdminPanel";
+import AdminDashboard from "@/src/components/AdminDashboard";
 import ChatPanel from "@/src/components/ChatPanel";
 import LoginScreen from "@/src/components/LoginScreen";
 import Navbar from "@/src/components/Navbar";
@@ -112,20 +111,6 @@ export default function AppShell() {
     setAuthMode("login");
   }
 
-  function renderSidePanel() {
-    if (resolvedRole === "admin") {
-      return <AdminPanel />;
-    }
-
-    return (
-      <ChatPanel
-        isAuthenticated={resolvedIsAuthenticated}
-        onRequireAuth={requireAuth}
-        currentUser={resolvedUser}
-      />
-    );
-  }
-
   const resolvedIsAuthenticated = isHydrated ? isAuthenticated : false;
   const resolvedRole = isHydrated ? activeRole : "cliente";
   const resolvedUser = isHydrated ? currentUser : null;
@@ -148,21 +133,23 @@ export default function AppShell() {
 
       {resolvedRole === "mesero" ? (
         <WaiterView />
+      ) : resolvedRole === "admin" ? (
+        <AdminDashboard />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <div className="h-72 w-full shrink-0 md:h-full md:w-1/4 md:min-w-[320px]">
-            {renderSidePanel()}
+            <ChatPanel
+              isAuthenticated={resolvedIsAuthenticated}
+              onRequireAuth={requireAuth}
+              currentUser={resolvedUser}
+            />
           </div>
           <div className="h-full min-h-0 flex-1">
-            {resolvedRole === "admin" ? (
-              <AdminMap />
-            ) : (
-              <RestaurantMap
-                isAuthenticated={resolvedIsAuthenticated}
-                onRequireAuth={requireAuth}
-                currentUser={resolvedUser}
-              />
-            )}
+            <RestaurantMap
+              isAuthenticated={resolvedIsAuthenticated}
+              onRequireAuth={requireAuth}
+              currentUser={resolvedUser}
+            />
           </div>
         </div>
       )}

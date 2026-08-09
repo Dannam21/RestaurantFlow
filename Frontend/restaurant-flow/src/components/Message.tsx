@@ -1,5 +1,21 @@
 import type { ChatMessageType } from "@/src/types";
 
+const MENU_KEYWORDS = [
+  "menú",
+  "menu",
+  "almuerzo",
+  "cena",
+  "qué pedir",
+  "que pedir",
+  "plato",
+  "aquí tienes",
+];
+
+export function mentionsMenu(text: string): boolean {
+  const normalized = text.toLowerCase();
+  return MENU_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
 function StatusTicks({ status }: { status: ChatMessageType["status"] }) {
   if (!status) return null;
 
@@ -19,8 +35,14 @@ function StatusTicks({ status }: { status: ChatMessageType["status"] }) {
   );
 }
 
-export default function Message({ message }: { message: ChatMessageType }) {
+interface MessageProps {
+  message: ChatMessageType;
+  onOpenMenu?: () => void;
+}
+
+export default function Message({ message, onOpenMenu }: MessageProps) {
   const isBot = message.sender === "bot";
+  const showMenuLink = isBot && onOpenMenu && mentionsMenu(message.text);
 
   return (
     <div
@@ -48,6 +70,16 @@ export default function Message({ message }: { message: ChatMessageType }) {
           <p className="mb-1 text-xs font-medium text-blue-100/80">Tú</p>
         )}
         <p className="whitespace-pre-line">{message.text}</p>
+
+        {showMenuLink && (
+          <button
+            type="button"
+            onClick={onOpenMenu}
+            className="mt-2 flex items-center gap-1 text-sm font-semibold text-sky-300 underline-offset-2 transition-colors hover:text-sky-200 hover:underline"
+          >
+            Ver Menú →
+          </button>
+        )}
       </div>
 
       <div

@@ -13,6 +13,7 @@ from api import (
     menu,
     messages,
     monitoring,
+    order_dishes,
     orders,
     service_sessions,
     staff,
@@ -57,6 +58,7 @@ app.add_middleware(
 )
 
 app.include_router(orders.router)
+app.include_router(order_dishes.router)
 app.include_router(tables.router)
 app.include_router(menu.router)
 app.include_router(messages.router)

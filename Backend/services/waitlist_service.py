@@ -125,6 +125,46 @@ async def estimate_wait(
     return False, min(waits)
 
 
+async def describe_availability_for_chat(
+    session: AsyncSession, party_size: int = 2
+) -> str:
+    """Ground the chat bot's answer to reservation questions in real table/
+    queue state, so it never invents availability it can't back up."""
+    active_queue_count = await session.scalar(
+        select(func.count())
+        .select_from(WaitlistEntry)
+        .where(WaitlistEntry.status.in_(ACTIVE_WAITLIST_STATUSES))
+    )
+    if active_queue_count:
+        return (
+            "Ahora mismo hay clientes esperando en la fila, así que no se pueden "
+            "separar mesas por adelantado. Recomiéndale unirse a la fila de espera "
+            "desde el mapa del restaurante."
+        )
+
+    can_seat_now, wait_minutes = await estimate_wait(session, party_size)
+    if can_seat_now:
+        return (
+            "Ahora mismo hay una mesa libre y no hay fila de espera. Si el cliente "
+            "llega ahora puede tomar la mesa directamente."
+        )
+    if wait_minutes is not None and wait_minutes <= 30:
+        return (
+            f"No hay fila de espera, pero todas las mesas están ocupadas. Si el "
+            f"cliente llega en los próximos {wait_minutes} minutos aproximadamente, "
+            "es probable que se le pueda ubicar."
+        )
+    if wait_minutes is not None:
+        return (
+            "No hay fila de espera, pero todas las mesas están ocupadas y el tiempo "
+            f"estimado de espera es de aproximadamente {wait_minutes} minutos."
+        )
+    return (
+        "No tenemos mesas con capacidad suficiente disponibles en este momento; "
+        "sugiérele unirse a la fila de espera desde el mapa del restaurante."
+    )
+
+
 async def create_waitlist_entry(
     session: AsyncSession, data: WaitlistEntryCreate
 ) -> WaitlistEntry:

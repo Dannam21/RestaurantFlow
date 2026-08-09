@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Message from "@/src/components/Message";
+import Message, { mentionsMenu } from "@/src/components/Message";
+import MenuModal from "@/src/components/MenuModal";
 import { useChat } from "@/src/hooks/useChat";
 import type { AuthUser } from "@/src/types";
 
@@ -24,7 +25,9 @@ export default function ChatPanel({
     currentUser: currentUser ?? undefined,
   });
   const [draft, setDraft] = useState("");
+  const [showMenu, setShowMenu] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hasAutoOpenedMenuRef = useRef(false);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -32,6 +35,19 @@ export default function ChatPanel({
       behavior: "smooth",
     });
   }, [messages, isSending]);
+
+  useEffect(() => {
+    if (hasAutoOpenedMenuRef.current) return;
+
+    const lastBotMessage = [...messages]
+      .reverse()
+      .find((message) => message.sender === "bot");
+
+    if (lastBotMessage && mentionsMenu(lastBotMessage.text)) {
+      hasAutoOpenedMenuRef.current = true;
+      setShowMenu(true);
+    }
+  }, [messages]);
 
   async function handleSend() {
     const text = draft.trim();
@@ -89,7 +105,11 @@ export default function ChatPanel({
         )}
 
         {messages.map((message) => (
-          <Message key={message.id} message={message} />
+          <Message
+            key={message.id}
+            message={message}
+            onOpenMenu={() => setShowMenu(true)}
+          />
         ))}
       </div>
 
@@ -131,6 +151,8 @@ export default function ChatPanel({
           <span className="text-xs text-slate-500">Disponible 24/7</span>
         </div>
       </div>
+
+      {showMenu && <MenuModal onClose={() => setShowMenu(false)} />}
     </aside>
   );
 }

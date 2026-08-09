@@ -88,9 +88,9 @@ async def analyze_order(session: AsyncSession, order: Order) -> AnalyzerResult:
     await session.refresh(order)
     order.estimated_duration = result.estimated_time
     order.estimated_time = result.estimated_time
-    restored_status = changed_to_analyzing and order.status == "analyzing"
-    if restored_status:
-        order.status = previous_status
+    advanced_to_cooking = changed_to_analyzing and order.status == "analyzing"
+    if advanced_to_cooking:
+        order.status = "cooking"
 
     agent_log = AgentLog(
         agent_name="analyzer",
@@ -105,7 +105,7 @@ async def analyze_order(session: AsyncSession, order: Order) -> AnalyzerResult:
     await session.commit()
     await session.refresh(order)
 
-    if restored_status:
+    if advanced_to_cooking:
         await portal_service.publish_order_event(
             "order.status_changed",
             {

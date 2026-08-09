@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Order, Table
 from schemas.models import OrderCreate, OrderStatus
-from services import portal_service, service_session_service
+from services import order_dish_service, portal_service, service_session_service
 
 
 logger = logging.getLogger(__name__)
@@ -41,6 +41,7 @@ async def create_order(session: AsyncSession, order_data: OrderCreate) -> Order 
     )
     session.add(order)
     await session.flush()
+    await order_dish_service.create_dishes_for_order(session, order)
 
     table.order_id = order.id
     table.status = "cooking"
