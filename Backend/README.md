@@ -47,7 +47,6 @@ En Linux/macOS, activa el entorno con `source .venv/bin/activate` y copia el
 archivo con `cp .env.example .env`. La base configurada por defecto es
 `restaurant_flow`; créala previamente con `createdb restaurant_flow`.
 
-Swagger queda disponible en `http://localhost:8000/docs`.
 
 ## Configuración
 
