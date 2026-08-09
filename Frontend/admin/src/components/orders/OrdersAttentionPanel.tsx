@@ -1,0 +1,3 @@
+import { AlertTriangle } from 'lucide-react'
+import { ordersAttention } from '../../data/mockOrdersData'
+export function OrdersAttentionPanel(){return <section className="orders-attention"><header><h2>ÓRDENES QUE REQUIEREN ATENCIÓN</h2><button type="button">Ver todas las alertas →</button></header><div>{ordersAttention.map(order=><article key={order.id} className={`attention-${order.priority}`}><span><strong>#{order.id}</strong> • Mesa {order.tableNumber}<b className={`priority priority-${order.priority}`}>{order.priority==='high'?'ALTA':'MEDIA'}</b></span><strong>{order.elapsedTime}</strong><small>{order.itemCount} platos • {order.chef}</small><p><AlertTriangle size={12}/>{order.reason}</p></article>)}</div></section>}

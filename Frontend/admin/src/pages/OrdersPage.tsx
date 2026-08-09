@@ -1,0 +1,11 @@
+import { Lightbulb } from 'lucide-react'
+import { useState } from 'react'
+import { AdminLayout } from '../components/layout/AdminLayout'
+import { OrderDetailsPanel } from '../components/orders/OrderDetailsPanel'
+import { OrdersAttentionPanel } from '../components/orders/OrdersAttentionPanel'
+import { OrdersBoard } from '../components/orders/OrdersBoard'
+import { OrdersHeader } from '../components/orders/OrdersHeader'
+import { OrdersSummary } from '../components/orders/OrdersSummary'
+import { mockOrders } from '../data/mockOrdersData'
+import type { AdminOrder } from '../types/orders'
+export function OrdersPage(){const[selected,setSelected]=useState<AdminOrder>(mockOrders.find(order=>order.id==='044')??mockOrders[0]);return <AdminLayout><OrdersHeader/><OrdersSummary/><div className="orders-content"><OrdersBoard orders={mockOrders} selectedId={selected.id} onSelect={setSelected}/><OrderDetailsPanel order={selected}/></div><OrdersAttentionPanel/><div className="orders-tip"><Lightbulb size={13}/><strong>Tip:</strong> Selecciona una orden para ver sus detalles y estado.</div></AdminLayout>}

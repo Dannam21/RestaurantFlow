@@ -1,0 +1,5 @@
+import { MessageSquare, Printer, UsersRound } from 'lucide-react'
+import type { AdminOrder } from '../../types/orders'
+import { OrderItems } from './OrderItems'
+import { OrderTimeline } from './OrderTimeline'
+export function OrderDetailsPanel({order}:{order:AdminOrder}){return <aside className="order-details"><header><span>DETALLE DE ORDEN</span><div><h2>Orden #{order.id}</h2>{order.priority!=='low'&&<b className={`priority priority-${order.priority}`}>{order.priority==='critical'?'CRÍTICA':order.priority==='high'?'ALTA':'MEDIA'}</b>}</div><p>Mesa {order.tableNumber}</p></header><section className="order-facts"><div><UsersRound size={14}/><span>Personas<strong>{order.guestCount}</strong></span></div><div><span>Hora del pedido<strong>{order.orderTime}</strong></span></div><div><span>{order.responsibleRole}<strong>{order.responsibleName}</strong></span></div></section><OrderItems dishes={order.dishes}/><OrderTimeline events={order.timeline}/><div className="detail-actions"><button type="button"><MessageSquare size={14}/>Enviar mensaje al mesero</button><button type="button"><Printer size={14}/>Imprimir ticket</button></div></aside>}

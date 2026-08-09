@@ -1,0 +1,6 @@
+import { trendLabels, trendPoints } from '../../data/mockAdminData'
+
+export function OrdersTrend() {
+  const coords = trendPoints.map((value,index)=>`${20+index*75},${120-value*1.7}`).join(' ')
+  return <section className="panel bottom-panel trend-panel"><div className="panel-heading"><div><span className="eyebrow">FLUJO DEL DÍA</span><h2>TENDENCIA DE ÓRDENES</h2></div><span className="trend-up">+15%</span></div><div className="chart-wrap"><svg viewBox="0 0 340 145" role="img" aria-label="Tendencia de órdenes del día"><defs><linearGradient id="lineArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7459e8" stopOpacity=".3"/><stop offset="1" stopColor="#7459e8" stopOpacity="0"/></linearGradient></defs>{[30,60,90,120].map(y=><line key={y} x1="15" x2="325" y1={y} y2={y} className="grid-line"/>)}<polygon points={`20,130 ${coords} 320,130`} fill="url(#lineArea)"/><polyline points={coords} className="trend-line"/>{trendPoints.map((value,index)=><circle key={index} cx={20+index*75} cy={120-value*1.7} r={index===3?5:3}/>)}</svg><div className="chart-tooltip"><span>1:12 p. m.</span><strong>48 órdenes</strong></div><div className="chart-labels">{trendLabels.map(label=><span key={label}>{label}</span>)}</div></div></section>
+}

@@ -1,0 +1,2 @@
+import { recentActivity } from '../../data/mockStaffData'
+export function RecentActivityPanel(){return <section className="staff-side-panel recent-activity"><h2>ACTIVIDAD RECIENTE</h2><ol>{recentActivity.map(event=><li className={`activity-${event.type}`} key={event.id}><time>{event.time}</time><i/><p>{event.description}</p></li>)}</ol><button type="button">Ver toda la actividad →</button></section>}

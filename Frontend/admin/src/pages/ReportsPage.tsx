@@ -1,0 +1,12 @@
+import { Lightbulb } from 'lucide-react'
+import { AdminLayout } from '../components/layout/AdminLayout'
+import { KitchenTimeChart } from '../components/reports/KitchenTimeChart'
+import { OrdersByStatusChart } from '../components/reports/OrdersByStatusChart'
+import { PeakHours } from '../components/reports/PeakHours'
+import { ReportsHeader } from '../components/reports/ReportsHeader'
+import { ReportsSummaryCards } from '../components/reports/ReportsSummaryCards'
+import { SalesByCategory } from '../components/reports/SalesByCategory'
+import { SalesByHourChart } from '../components/reports/SalesByHourChart'
+import { TableRotation } from '../components/reports/TableRotation'
+import { TopDishes } from '../components/reports/TopDishes'
+export function ReportsPage(){return <AdminLayout><ReportsHeader/><ReportsSummaryCards/><div className="reports-main-grid"><SalesByHourChart/><KitchenTimeChart/><OrdersByStatusChart/></div><div className="reports-secondary-grid"><TopDishes/><SalesByCategory/><TableRotation/></div><PeakHours/><div className="reports-tip"><Lightbulb size={13}/><strong>Tip:</strong><span>Las horas pico de hoy fueron 2 PM - 3 PM y 7 PM - 8 PM. Considera más personal en esos horarios.</span></div></AdminLayout>}

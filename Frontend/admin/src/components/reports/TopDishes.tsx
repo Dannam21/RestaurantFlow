@@ -1,0 +1,2 @@
+import { topDishes } from '../../data/mockReportsData'
+export function TopDishes(){return <section className="report-panel top-dishes"><header><h2>PLATOS MÁS VENDIDOS</h2><select aria-label="Periodo de platos"><option>Hoy</option></select></header><ol>{topDishes.map((dish,index)=><li key={dish.id}><b>{index+1}</b><i>{dish.icon}</i><div><span><strong>{dish.name}</strong><em>{dish.count}</em></span><small><i style={{width:`${dish.count/32*100}%`}}/></small></div></li>)}</ol><button>Ver todos los platos →</button></section>}

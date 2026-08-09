@@ -1,0 +1,2 @@
+import { SlidersHorizontal } from 'lucide-react'
+export function OrderFilters(){return <div className="order-filters"><button type="button"><SlidersHorizontal size={14}/>Filtros</button><label><span>Ordenar por</span><select defaultValue="recent"><option value="recent">Más reciente</option><option value="priority">Mayor prioridad</option><option value="oldest">Más antigua</option></select></label></div>}

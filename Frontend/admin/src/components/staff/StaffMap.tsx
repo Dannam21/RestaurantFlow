@@ -1,0 +1,3 @@
+import restaurantBackground from '../../../../restaurant-flow/assets/fondorestaurante.png'
+import { staffMapMarkers } from '../../data/mockStaffData'
+export function StaffMap(){return <section className="staff-map-panel"><header><span>UBICACIÓN EN TIEMPO REAL</span><h2>MAPA DEL PERSONAL</h2></header><div className="staff-map" style={{backgroundImage:`linear-gradient(rgba(4,8,12,.12),rgba(4,8,12,.24)),url(${restaurantBackground})`}}>{staffMapMarkers.map(marker=><div key={marker.id} className={`staff-marker status-${marker.status}`} style={{left:`${marker.x}%`,top:`${marker.y}%`}}><img src={marker.avatar} alt=""/><span><strong>{marker.name}</strong><small>{marker.detail}</small></span></div>)}</div></section>}
