@@ -43,6 +43,7 @@ export default function RestaurantMap({
   const [showMenu, setShowMenu] = useState(false);
   const [showMyOrder, setShowMyOrder] = useState(false);
   const [seatedMessage, setSeatedMessage] = useState<string | null>(null);
+  const [isRequestingBill, setIsRequestingBill] = useState(false);
 
   const myActiveTable = currentUser?.id
     ? tables.find(
@@ -83,6 +84,24 @@ export default function RestaurantMap({
       );
     } finally {
       setIsReserving(false);
+    }
+  }
+
+  async function handleRequestBill(tableId: number) {
+    if (isRequestingBill) return;
+    setIsRequestingBill(true);
+    try {
+      await updateTable(tableId, { status: "paying" });
+      setSeatedMessage("Se solicitó la cuenta. Tu mesero se acercará pronto para cobrar.");
+      refetch();
+    } catch (err) {
+      setSeatedMessage(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo solicitar la cuenta. Intenta de nuevo."
+      );
+    } finally {
+      setIsRequestingBill(false);
     }
   }
 
@@ -175,6 +194,15 @@ export default function RestaurantMap({
                     : undefined
               }
               ownerBadge={isMine ? "Tu mesa" : undefined}
+              topAction={
+                isMine && table.status === "eating"
+                  ? {
+                      label: "💳 Pedir la cuenta",
+                      onClick: () => handleRequestBill(table.id),
+                      disabled: isRequestingBill,
+                    }
+                  : undefined
+              }
               onClick={() => {
                 if (table.status === "empty") {
                   handleReserveClick(table.id);

@@ -22,6 +22,11 @@ export interface TableProps {
   isMine?: boolean;
   hoverHint?: string;
   ownerBadge?: string;
+  topAction?: {
+    label: string;
+    onClick: () => void;
+    disabled?: boolean;
+  };
 }
 
 const ALERT_TONE_CLASS: Record<TableAlert["tone"], string> = {
@@ -65,6 +70,7 @@ export default function Table({
   isMine,
   hoverHint,
   ownerBadge,
+  topAction,
 }: TableProps) {
   const isVacant = status === "vacio";
   const tableSprite =
@@ -140,6 +146,20 @@ export default function Table({
           style={{ width: imageWidth, height: imageHeight }}
         />
       </div>
+
+      {topAction && (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            topAction.onClick();
+          }}
+          disabled={topAction.disabled}
+          className="absolute -top-9 left-1/2 z-40 -translate-x-1/2 whitespace-nowrap rounded-full border border-amber-400/70 bg-amber-950/95 px-2.5 py-1 text-[10px] font-semibold text-amber-200 shadow-lg transition-colors hover:bg-amber-900 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {topAction.label}
+        </button>
+      )}
 
       {ownerBadge && (
         <div className="pointer-events-none absolute -top-2 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full border border-sky-400/60 bg-sky-950/90 px-2.5 py-0.5 text-[10px] font-semibold text-sky-200 shadow-lg">

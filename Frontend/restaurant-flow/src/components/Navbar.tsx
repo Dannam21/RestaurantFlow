@@ -102,6 +102,8 @@ interface NavbarProps {
   onLoginClick?: () => void;
   onLogout?: () => void;
   onViewReservations?: () => void;
+  isMusicOn?: boolean;
+  onToggleMusic?: () => void;
 }
 
 export default function Navbar({
@@ -113,6 +115,8 @@ export default function Navbar({
   onLoginClick,
   onLogout,
   onViewReservations,
+  isMusicOn = false,
+  onToggleMusic,
 }: NavbarProps) {
   const [now, setNow] = useState<Date | null>(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -187,6 +191,18 @@ export default function Navbar({
       </div>
 
       <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={onToggleMusic}
+          aria-label={
+            isMusicOn ? "Silenciar música de fondo" : "Activar música de fondo"
+          }
+          title={isMusicOn ? "Silenciar música de fondo" : "Activar música de fondo"}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+        >
+          {isMusicOn ? "🎵" : "🔇"}
+        </button>
+
         <div className="relative" ref={notificationsMenuRef}>
           <button
             type="button"

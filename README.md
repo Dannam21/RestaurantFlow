@@ -4,6 +4,12 @@ Plataforma de gestión de restaurante en tiempo real: mapa interactivo de mesas,
 
 ![Vista de cliente en RestaurantFlow](Frontend/restaurant-flow/assets/imgreadme.png)
 
+## Demo
+
+- 🚀 **App en vivo**: [restaurant-flow-nu.vercel.app](https://restaurant-flow-nu.vercel.app/)
+- 🎤 **Video pitch**: [youtube.com/watch?v=YyVDy256qDM](https://www.youtube.com/watch?v=YyVDy256qDM)
+- 🎥 **Video demo**: [youtube.com/watch?v=rhoR4-daXzU](https://www.youtube.com/watch?v=rhoR4-daXzU)
+
 ## ¿Qué es?
 
 RestaurantFlow conecta a clientes, meseros, cocina y administración sobre un mismo estado en vivo: cuando una mesa cambia, un pedido avanza o un plato queda listo, todos los roles lo ven al instante sin recargar la página.

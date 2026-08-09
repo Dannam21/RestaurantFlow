@@ -13,6 +13,12 @@ import RestaurantMap from "@/src/components/RestaurantMap";
 import WaiterView from "@/src/components/WaiterView";
 import { useOrderNotifications } from "@/src/hooks/useOrderNotifications";
 import type { AppRole, AuthUser } from "@/src/types";
+import {
+  isBackgroundMusicEnabled,
+  setBackgroundMusicEnabled,
+  startBackgroundMusic,
+  stopBackgroundMusic,
+} from "@/src/utils/backgroundMusic";
 
 type AuthMode = "login" | "register";
 const AUTH_STORAGE_KEY = "restaurant-flow-auth";
@@ -90,6 +96,27 @@ export default function AppShell() {
   );
   const [showReservationHistory, setShowReservationHistory] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isMusicOn, setIsMusicOn] = useState(false);
+
+  useEffect(() => {
+    setIsMusicOn(isBackgroundMusicEnabled());
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (isMusicOn) {
+      startBackgroundMusic();
+    } else {
+      stopBackgroundMusic();
+    }
+    return () => stopBackgroundMusic();
+  }, [isMusicOn, isHydrated]);
+
+  function toggleMusic() {
+    const next = !isMusicOn;
+    setIsMusicOn(next);
+    setBackgroundMusicEnabled(next);
+  }
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -135,6 +162,8 @@ export default function AppShell() {
         onDismissNotification={dismissNotification}
         onLoginClick={requireAuth}
         onViewReservations={() => setShowReservationHistory(true)}
+        isMusicOn={isMusicOn}
+        onToggleMusic={toggleMusic}
         onLogout={() => {
           setIsAuthenticated(false);
           setActiveRole("cliente");
